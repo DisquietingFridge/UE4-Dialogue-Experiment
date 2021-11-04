@@ -1,7 +1,11 @@
 # Visual Studio 2015 user specific files
 .vs/
 
+<<<<<<< Updated upstream:.gitignore
 #UAssets (big assets to not be uploaded) - Pat
+=======
+#Custom exclusions - Pat
+>>>>>>> Stashed changes:.gitignore/.gitignore
 Content/StarterContent/*
 *.uasset
 
