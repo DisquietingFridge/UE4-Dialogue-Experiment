@@ -7,7 +7,6 @@
 #Custom exclusions - Pat
 >>>>>>> Stashed changes:.gitignore/.gitignore
 Content/StarterContent/*
-*.uasset
 
 # Compiled Object files
 *.slo
