@@ -26,7 +26,7 @@ public:
 
 	// asks subject to return the reference of the FString field it would like "driven".
 	//virtual TSharedRef<FString> GetFieldRef();
-	virtual const FString& GetFieldRef() const = 0;
+	virtual FString& GetFieldRef();
 
 	//transmits text to a recipient. Likely to be deprecated.
 	UFUNCTION(BlueprintCallable,BlueprintNativeEvent, Blueprintable)

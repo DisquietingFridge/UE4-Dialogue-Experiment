@@ -15,6 +15,6 @@ void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
     return MakeShared<FString>(this->Output_Text);
 }*/
 
-const FString& UDialogueWidget::GetFieldRef() const {
+FString& UDialogueWidget::GetFieldRef() {
     return Output_Text;
 }

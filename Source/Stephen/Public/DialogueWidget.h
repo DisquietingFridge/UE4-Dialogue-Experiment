@@ -30,7 +30,8 @@ public:
 	//https://nerivec.github.io/old-ue4-wiki/pages/how-to-modify-blueprint-variable-references-in-c-without-copying.html
 	//
 
-	virtual const FString& GetFieldRef() const override;
+	//UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
+		FString& GetFieldRef() override;
 	//virtual const FString& GetFieldRef_Implementation() const override;
 	//virtual TSharedRef<FString> GetFieldRef() override;
 	//virtual TSharedRef<FString> GetFieldRef_Implementation() override;
