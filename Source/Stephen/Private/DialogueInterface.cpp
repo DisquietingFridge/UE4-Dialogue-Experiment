@@ -5,3 +5,8 @@
 
 // Add default functionality here for any IDialogueInterface functions that are not pure virtual.
 
+/*const FString& IDialogueInterface::GetFieldRef() const
+{
+    return FString("");
+}*/
+

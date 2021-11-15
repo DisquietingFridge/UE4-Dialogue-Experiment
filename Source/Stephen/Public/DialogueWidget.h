@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Templates/SharedPointer.h"
 #include "DialogueInterface.h"
 #include "DialogueWidget.generated.h"
 
@@ -26,11 +27,12 @@ public:
 		void Send_Text(const FString& Sent_Text);
 	virtual void Send_Text_Implementation(const FString& Sent_Text) override;
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
-		FString& GetFieldRef();
-	virtual FString& GetFieldRef_Implementation() override;
+	//https://nerivec.github.io/old-ue4-wiki/pages/how-to-modify-blueprint-variable-references-in-c-without-copying.html
+	//
 
-	
-	
-	
+	virtual const FString& GetFieldRef() const override;
+	//virtual const FString& GetFieldRef_Implementation() const override;
+	//virtual TSharedRef<FString> GetFieldRef() override;
+	//virtual TSharedRef<FString> GetFieldRef_Implementation() override;
+
 };

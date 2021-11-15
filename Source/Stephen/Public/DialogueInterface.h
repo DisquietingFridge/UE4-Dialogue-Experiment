@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Templates/SharedPointer.h"
 #include "UObject/Interface.h"
 #include "DialogueInterface.generated.h"
 
@@ -22,11 +23,14 @@ class STEPHEN_API IDialogueInterface
 	GENERATED_BODY()
 
 public:
-	//transmits text to a recipient. Likely to be deprecated.
-	UFUNCTION(BlueprintCallable,BlueprintNativeEvent,Blueprintable)
-		void Send_Text(const FString& Sent_Text);
 
 	// asks subject to return the reference of the FString field it would like "driven".
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
-		FString& GetFieldRef();
+	//virtual TSharedRef<FString> GetFieldRef();
+	virtual const FString& GetFieldRef() const = 0;
+
+	//transmits text to a recipient. Likely to be deprecated.
+	UFUNCTION(BlueprintCallable,BlueprintNativeEvent, Blueprintable)
+		void Send_Text(const FString& Sent_Text);
+
+
 };

@@ -2,6 +2,7 @@
 
 
 #include "DialogueWidget.h"
+#include "Templates/SharedPointer.h"
 
 void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
 {
@@ -9,7 +10,11 @@ void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
     return;
 }
 
-FString& UDialogueWidget::GetFieldRef_Implementation()
+/*TSharedRef<FString> UDialogueWidget::GetFieldRef()
 {
-    return (this->Output_Text);
+    return MakeShared<FString>(this->Output_Text);
+}*/
+
+const FString& UDialogueWidget::GetFieldRef() const {
+    return Output_Text;
 }
