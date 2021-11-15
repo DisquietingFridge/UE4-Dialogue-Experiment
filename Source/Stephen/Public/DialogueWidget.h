@@ -27,8 +27,8 @@ public:
 	virtual void Send_Text_Implementation(const FString& Sent_Text) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
-		FString GetFieldRef();
-	virtual FString GetFieldRef_Implementation() override;
+		FString& GetFieldRef();
+	virtual FString& GetFieldRef_Implementation() override;
 
 	
 	

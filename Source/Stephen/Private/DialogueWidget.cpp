@@ -9,7 +9,7 @@ void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
     return;
 }
 
-FString UDialogueWidget::GetFieldRef_Implementation()
+FString& UDialogueWidget::GetFieldRef_Implementation()
 {
     return (this->Output_Text);
 }

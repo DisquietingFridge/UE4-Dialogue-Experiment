@@ -26,7 +26,7 @@ public:
 	UFUNCTION(BlueprintCallable,BlueprintNativeEvent,Blueprintable)
 		void Send_Text(const FString& Sent_Text);
 
-	// asks subject to return the pointer of the FString field it would like "driven".
+	// asks subject to return the reference of the FString field it would like "driven".
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
-		FString GetFieldRef();
+		FString& GetFieldRef();
 };
