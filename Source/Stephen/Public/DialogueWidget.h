@@ -27,13 +27,8 @@ public:
 		void Send_Text(const FString& Sent_Text);
 	virtual void Send_Text_Implementation(const FString& Sent_Text) override;
 
-	//https://nerivec.github.io/old-ue4-wiki/pages/how-to-modify-blueprint-variable-references-in-c-without-copying.html
-	//
-
-	//UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
-		FString& GetFieldRef() override;
-	//virtual const FString& GetFieldRef_Implementation() const override;
-	//virtual TSharedRef<FString> GetFieldRef() override;
-	//virtual TSharedRef<FString> GetFieldRef_Implementation() override;
+	//returns smart pointer of text field to be driven
+	//smart pointers cannot be exposed to reflection / blueprints (i.e. no UFUNCTION declaration)
+	virtual TSharedRef<FString> GetFieldRef() override;
 
 };

@@ -10,11 +10,8 @@ void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
     return;
 }
 
-/*TSharedRef<FString> UDialogueWidget::GetFieldRef()
+//returns smart pointer of text field to be driven
+TSharedRef<FString> UDialogueWidget::GetFieldRef()
 {
-    return MakeShared<FString>(this->Output_Text);
-}*/
-
-FString& UDialogueWidget::GetFieldRef() {
-    return Output_Text;
+    return MakeShared<FString>(Output_Text);
 }
