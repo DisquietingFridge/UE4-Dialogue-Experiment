@@ -2,14 +2,38 @@
 
 
 #include "DialoguePawn.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Engine/DataTable.h"
+#include "Internationalization/Text.h"
+#include "GameFramework/Controller.h"
 
 // Sets default values
 ADialoguePawn::ADialoguePawn()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	Controller_Rotation = FRotator(0);
+	Repossess_Target = nullptr; 
+	Dialogue_Window = nullptr;
+	Lines_Table = nullptr;
+	Line = "";
+	Nametag = FText::FromString("");
 
+	Scan_Delay = 0.005;
 }
+
+ void ADialoguePawn::initDialoguePawn(
+	 UDataTable* Lines_Table_in,
+	 FName Line_in,
+	 FText Nametag_in,
+	 FRotator Controller_Rotation_in,
+	 APawn* Repossess_Target_in) {
+
+	 Lines_Table = Lines_Table_in;
+	 Line = Line_in;
+	 Nametag = Nametag_in;
+	 Controller_Rotation = Controller_Rotation_in;
+	 Repossess_Target = Repossess_Target_in;
+ }
 
 // Called when the game starts or when spawned
 void ADialoguePawn::BeginPlay()
