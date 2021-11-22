@@ -20,11 +20,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FName Line;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Nametag;
-
+	
 	// Pertaining to original player controller
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class APawn* Repossess_Target;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator Controller_Rotation;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDialogueWidget* Dialogue_Window;
+
+	UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite) UDialogueWidget* Dialogue_Window;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Delay;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FString Inprogress_String;

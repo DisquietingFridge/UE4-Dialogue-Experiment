@@ -11,12 +11,16 @@
 // Sets default values
 ADialoguePawn::ADialoguePawn()
 {
+	PrimaryActorTick.bStartWithTickEnabled = false;
+
 	Controller_Rotation = FRotator(0);
 	Repossess_Target = nullptr; 
 	Dialogue_Window = nullptr;
 	Lines_Table = nullptr;
-	Line = "King0";
+	Line = "";
 	Nametag = FText::FromString("");
+
+	Dialogue_Window = nullptr;
 
 	Scan_Delay = 0.005;
 	Inprogress_String = "";
@@ -42,6 +46,9 @@ void ADialoguePawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (Dialogue_Window) {
+		Dialogue_Window->AddToViewport(0);
+	}
 }
 
 // Called every frame
