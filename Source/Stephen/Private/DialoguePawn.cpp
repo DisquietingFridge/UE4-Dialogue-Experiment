@@ -15,18 +15,20 @@ ADialoguePawn::ADialoguePawn()
 	Repossess_Target = nullptr; 
 	Dialogue_Window = nullptr;
 	Lines_Table = nullptr;
-	Line = "";
+	Line = "King0";
 	Nametag = FText::FromString("");
 
 	Scan_Delay = 0.005;
+	Inprogress_String = "";
+	Block_Text = FText::FromString("");
 }
 
- void ADialoguePawn::initDialoguePawn(
-	 UDataTable* Lines_Table_in,
+ void ADialoguePawn::initDialoguePawn_Implementation(
+	 class UDataTable* Lines_Table_in,
 	 FName Line_in,
-	 FText Nametag_in,
+	 const FText& Nametag_in,
 	 FRotator Controller_Rotation_in,
-	 APawn* Repossess_Target_in) {
+	 class APawn* Repossess_Target_in) {
 
 	 Lines_Table = Lines_Table_in;
 	 Line = Line_in;

@@ -27,13 +27,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDialogueWidget* Dialogue_Window;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Delay;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FString Inprogress_String;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Block_Text;
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable) //, BlueprintImplementableEvent
 	void initDialoguePawn(
-		UDataTable* Lines_Table_in,
+		class UDataTable* Lines_Table_in,
 		FName Line_in,
-		FText Nametag_in,
+		const FText& Nametag_in,
 		FRotator Controller_Rotation_in,
-		APawn* Repossess_Target_in);
+		class APawn* Repossess_Target_in);
+
+	virtual void initDialoguePawn_Implementation(
+		class UDataTable* Lines_Table_in,
+		FName Line_in,
+		const FText& Nametag_in,
+		FRotator Controller_Rotation_in,
+		class APawn* Repossess_Target_in);
 
 
 	// Sets default values for this pawn's properties
