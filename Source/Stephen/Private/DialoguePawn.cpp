@@ -45,6 +45,8 @@ ADialoguePawn::ADialoguePawn()
 void ADialoguePawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Dialogue_Window = NewObject<UDialogueWidget>(this, Window_Class);
 	
 	if (Dialogue_Window) {
 		Dialogue_Window->AddToViewport(0);

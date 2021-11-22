@@ -14,7 +14,6 @@ class STEPHEN_API ADialoguePawn : public APawn
 	GENERATED_BODY()
 
 public:
-
 	
 	// Pertaining to data table
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table;
@@ -22,14 +21,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Nametag;
 	
 	// Pertaining to original player controller
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) class APawn* Repossess_Target;
+	UPROPERTY(BlueprintReadWrite) class APawn* Repossess_Target;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator Controller_Rotation;
 
-	UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite) UDialogueWidget* Dialogue_Window;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) TSubclassOf<UDialogueWidget> Window_Class;
+	UPROPERTY(BlueprintReadWrite) UDialogueWidget* Dialogue_Window;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Delay;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FString Inprogress_String;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Block_Text;
+	UPROPERTY(BlueprintReadWrite) FString Inprogress_String;
+	UPROPERTY(BlueprintReadWrite) FText Block_Text;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable) //, BlueprintImplementableEvent
 	void initDialoguePawn(
