@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Templates/SharedPointer.h"
 #include "DialogueInterface.h"
 #include "DialogueWidget.generated.h"
 
@@ -20,7 +19,7 @@ class STEPHEN_API UDialogueWidget : public UUserWidget, public IDialogueInterfac
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString Output_Text = "";
+		FString Output_Text = "Output_Text initialized";
 	
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)

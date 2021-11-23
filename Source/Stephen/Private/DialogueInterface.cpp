@@ -9,7 +9,7 @@
 //default functionality that won't actually be used- just make a static variable who cares
 TSharedRef<FString> IDialogueInterface::GetFieldRef()
 {
-    static FString perm = "";
+    static FString perm = "Default Interface Implementation";
     return MakeShared<FString>(perm);
 }
 

@@ -2,7 +2,6 @@
 
 
 #include "DialogueWidget.h"
-#include "Templates/SharedPointer.h"
 
 void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
 {

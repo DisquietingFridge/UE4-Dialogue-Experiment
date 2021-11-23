@@ -14,6 +14,8 @@ class STEPHEN_API ADialoguePawn : public APawn
 	GENERATED_BODY()
 
 public:
+
+	TSharedRef<FString> DrivenText = MakeShared<FString>("TSharedRef initialized");
 	
 	// Pertaining to data table
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table;

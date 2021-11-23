@@ -2,11 +2,7 @@
 
 
 #include "DialoguePawn.h"
-#include "Kismet/GameplayStatics.h"
-#include "Engine/World.h"
-#include "Engine/DataTable.h"
-#include "Internationalization/Text.h"
-#include "GameFramework/Controller.h"
+//#include "GameFramework/Controller.h"
 
 // Sets default values
 ADialoguePawn::ADialoguePawn()
@@ -50,7 +46,13 @@ void ADialoguePawn::BeginPlay()
 	
 	if (Dialogue_Window) {
 		Dialogue_Window->AddToViewport(0);
+		DrivenText = Dialogue_Window->GetFieldRef();
+		//(*DrivenText) = "DrivenText assigned to";
+		Dialogue_Window->Output_Text = "Manual Assignment Successful";
+		Dialogue_Window->Output_Text = (*DrivenText);
 	}
+
+
 }
 
 // Called every frame
