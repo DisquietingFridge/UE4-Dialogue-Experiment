@@ -3,3 +3,7 @@
 
 #include "DialogueData.h"
 
+ADialogueData::ADialogueData()
+{
+}
+
