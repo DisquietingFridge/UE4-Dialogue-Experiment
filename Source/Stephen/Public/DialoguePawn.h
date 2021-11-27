@@ -2,10 +2,12 @@
 
 #pragma once
 
+class UDialogueWidget;
+
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/DataTable.h"
-#include "DialogueWidget.h"
+//#include "DialogueWidget.h"
 #include "DialoguePawn.generated.h"
 
 UCLASS()
@@ -14,8 +16,6 @@ class STEPHEN_API ADialoguePawn : public APawn
 	GENERATED_BODY()
 
 public:
-
-	TSharedRef<FString> DrivenText = MakeShared<FString>("TSharedRef initialized");
 	
 	// Pertaining to data table
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table;
@@ -26,37 +26,44 @@ public:
 	UPROPERTY(BlueprintReadWrite) class APawn* Repossess_Target;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator Controller_Rotation;
 
+	// Pertaining to widget
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) TSubclassOf<UDialogueWidget> Window_Class;
 	UPROPERTY(BlueprintReadWrite) UDialogueWidget* Dialogue_Window;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Delay;
-	UPROPERTY(BlueprintReadWrite) FString Inprogress_String;
+	TCHAR CharMessage;
 	UPROPERTY(BlueprintReadWrite) FText Block_Text;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable) //, BlueprintImplementableEvent
-	void initDialoguePawn(
-		class UDataTable* Lines_Table_in,
-		FName Line_in,
-		const FText& Nametag_in,
-		FRotator Controller_Rotation_in,
-		class APawn* Repossess_Target_in);
-
-	virtual void initDialoguePawn_Implementation(
-		class UDataTable* Lines_Table_in,
-		FName Line_in,
-		const FText& Nametag_in,
-		FRotator Controller_Rotation_in,
-		class APawn* Repossess_Target_in);
-
+	// Delegates
+	DECLARE_MULTICAST_DELEGATE(GenericEvent)
+	GenericEvent AppendChar;
+	
+	UFUNCTION(/*BlueprintNativeEvent,*/ BlueprintCallable)
+		void initDialoguePawn(
+			class UDataTable* Lines_Table_in,
+			FName Line_in,
+			const FText& Nametag_in,
+			FRotator Controller_Rotation_in,
+			class APawn* Repossess_Target_in);
 
 	// Sets default values for this pawn's properties
 	ADialoguePawn();
 
-
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable)
+		void Drive_Append_Char();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+		void Next_Block();
+	virtual void Next_Block_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+		void Skip_Block();
+	virtual void Skip_Block_Implementation();
+
 
 public:	
 	// Called every frame

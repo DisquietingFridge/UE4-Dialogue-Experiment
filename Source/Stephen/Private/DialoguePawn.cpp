@@ -2,7 +2,7 @@
 
 
 #include "DialoguePawn.h"
-//#include "GameFramework/Controller.h"
+#include "DialogueWidget.h"
 
 // Sets default values
 ADialoguePawn::ADialoguePawn()
@@ -14,16 +14,19 @@ ADialoguePawn::ADialoguePawn()
 	Dialogue_Window = nullptr;
 	Lines_Table = nullptr;
 	Line = "";
-	Nametag = FText::FromString("");
+	Nametag = FText::FromString("ERROR: UNDEFINED NAME");
 
 	Dialogue_Window = nullptr;
 
 	Scan_Delay = 0.005;
-	Inprogress_String = "";
+	CharMessage = CHAR(0);
 	Block_Text = FText::FromString("");
+
+	AppendChar.AddUObject(this, &ADialoguePawn::Drive_Append_Char);
+
 }
 
- void ADialoguePawn::initDialoguePawn_Implementation(
+ void ADialoguePawn::initDialoguePawn(
 	 class UDataTable* Lines_Table_in,
 	 FName Line_in,
 	 const FText& Nametag_in,
@@ -37,6 +40,19 @@ ADialoguePawn::ADialoguePawn()
 	 Repossess_Target = Repossess_Target_in;
  }
 
+ void ADialoguePawn::Drive_Append_Char()
+ {
+	 if (Dialogue_Window) Dialogue_Window->Output_Append(CharMessage);
+ }
+
+ void ADialoguePawn::Next_Block_Implementation()
+ {
+ }
+
+ void ADialoguePawn::Skip_Block_Implementation()
+ {
+ }
+
 // Called when the game starts or when spawned
 void ADialoguePawn::BeginPlay()
 {
@@ -44,15 +60,7 @@ void ADialoguePawn::BeginPlay()
 
 	Dialogue_Window = NewObject<UDialogueWidget>(this, Window_Class);
 	
-	if (Dialogue_Window) {
-		Dialogue_Window->AddToViewport(0);
-		DrivenText = Dialogue_Window->GetFieldRef();
-		//(*DrivenText) = "DrivenText assigned to";
-		Dialogue_Window->Output_Text = "Manual Assignment Successful";
-		Dialogue_Window->Output_Text = (*DrivenText);
-	}
-
-
+	if (Dialogue_Window) Dialogue_Window->AddToViewport(0);
 }
 
 // Called every frame

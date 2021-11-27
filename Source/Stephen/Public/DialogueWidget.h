@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "DialogueInterface.h"
+//#include "DialogueInterface.h"
 #include "DialogueWidget.generated.h"
 
 
@@ -12,22 +12,23 @@
  * 
  */
 UCLASS(Blueprintable)
-class STEPHEN_API UDialogueWidget : public UUserWidget, public IDialogueInterface
+class STEPHEN_API UDialogueWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+private:
+
+	UPROPERTY()
+		FString Output_Text = "Output_Text initialized";
+
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString Output_Text = "Output_Text initialized";
-	
 
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Blueprintable)
-		void Send_Text(const FString& Sent_Text);
-	virtual void Send_Text_Implementation(const FString& Sent_Text) override;
+	void Output_Set(const FString& Sent_Text);
 
-	//returns smart pointer of text field to be driven
-	//smart pointers cannot be exposed to reflection / blueprints (i.e. no UFUNCTION declaration)
-	virtual TSharedRef<FString> GetFieldRef() override;
+
+	// Either append a single character or a string
+	void Output_Append(const TCHAR Sent_Char);
+	void Output_Append(const FString& Sent_Text);
 
 };

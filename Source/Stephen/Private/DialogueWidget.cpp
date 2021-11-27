@@ -3,14 +3,17 @@
 
 #include "DialogueWidget.h"
 
-void UDialogueWidget::Send_Text_Implementation(const FString& Sent_Text)
+void UDialogueWidget::Output_Set(const FString& Sent_Text)
 {
     this->Output_Text = Sent_Text;
-    return;
 }
 
-//returns smart pointer of text field to be driven
-TSharedRef<FString> UDialogueWidget::GetFieldRef()
+void UDialogueWidget::Output_Append(const TCHAR Sent_Char)
 {
-    return MakeShared<FString>(Output_Text);
+    this->Output_Text.FString::AppendChar(Sent_Char);
+}
+
+void UDialogueWidget::Output_Append(const FString& Sent_Text)
+{
+    this->Output_Text.FString::Append(Sent_Text);
 }
