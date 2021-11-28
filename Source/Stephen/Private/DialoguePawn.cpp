@@ -45,6 +45,11 @@ ADialoguePawn::ADialoguePawn()
 	 if (Dialogue_Window) Dialogue_Window->Output_Append(CharMessage);
  }
 
+ void ADialoguePawn::Drive_Set_Text()
+ {
+	 Dialogue_Window->Output_Set(Block_Text.ToString());
+ }
+
  void ADialoguePawn::Next_Block_Implementation()
  {
  }

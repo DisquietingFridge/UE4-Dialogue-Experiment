@@ -23,12 +23,14 @@ private:
 
 public:
 
-
+	UFUNCTION(BlueprintCallable)
 	void Output_Set(const FString& Sent_Text);
 
 
 	// Either append a single character or a string
 	void Output_Append(const TCHAR Sent_Char);
+	//string version is callable in blueprint
+	UFUNCTION(BlueprintCallable)
 	void Output_Append(const FString& Sent_Text);
 
 };

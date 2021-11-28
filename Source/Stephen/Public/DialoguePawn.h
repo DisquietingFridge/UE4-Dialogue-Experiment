@@ -56,6 +56,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 		void Drive_Append_Char();
 
+	UFUNCTION(BlueprintCallable)
+		void Drive_Set_Text();
+
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 		void Next_Block();
 	virtual void Next_Block_Implementation();

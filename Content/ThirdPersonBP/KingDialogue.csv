@@ -1,4 +1,4 @@
-Name,Char,Text,Respond,Next,Responses,Delegates
+Name,CharNum,BlockText,Respond,NextBlockName,Responses,Delegates
 King0,1,my publisher says i can't put any more psychic guys in my books,FALSE,King1,,
 King1,1,do u think they would be mad if i wrote about a psychic cornfield,FALSE,King2,,
 King2,1,tbh i'm on kind of thin ice with corn stuff as well,TRUE,,"(""Res1"",""Res2"")",
