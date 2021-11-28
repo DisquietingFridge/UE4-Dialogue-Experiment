@@ -7,7 +7,7 @@ class UDialogueWidget;
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Engine/DataTable.h"
-//#include "DialogueWidget.h"
+#include "DialogueStructs.h"
 #include "DialoguePawn.generated.h"
 
 UCLASS()
@@ -38,11 +38,9 @@ public:
 	DECLARE_MULTICAST_DELEGATE(GenericEvent)
 	GenericEvent AppendChar;
 	
-	UFUNCTION(/*BlueprintNativeEvent,*/ BlueprintCallable)
+	UFUNCTION(BlueprintCallable)
 		void initDialoguePawn(
-			class UDataTable* Lines_Table_in,
-			FName Line_in,
-			const FText& Nametag_in,
+			FTalkerStruct Talker_Info,
 			FRotator Controller_Rotation_in,
 			class APawn* Repossess_Target_in);
 

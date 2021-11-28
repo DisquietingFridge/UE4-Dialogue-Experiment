@@ -42,7 +42,7 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct STEPHEN_API FTalkerStruct : public FTableRowBase
+struct STEPHEN_API FTalkerStruct
 {
 
 	GENERATED_USTRUCT_BODY()
@@ -58,5 +58,5 @@ public:
 		class UDataTable* Lines_Table;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FName FirstBlockName;
+		FName First_Block_Name;
 };

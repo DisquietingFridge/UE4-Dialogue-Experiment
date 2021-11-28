@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "DialogueStructs.h"
 #include "DialoguePawn.h"
 #include "DialogueWidget.h"
 
@@ -27,15 +27,13 @@ ADialoguePawn::ADialoguePawn()
 }
 
  void ADialoguePawn::initDialoguePawn(
-	 class UDataTable* Lines_Table_in,
-	 FName Line_in,
-	 const FText& Nametag_in,
+	 FTalkerStruct Talker_Info,
 	 FRotator Controller_Rotation_in,
 	 class APawn* Repossess_Target_in) {
 
-	 Lines_Table = Lines_Table_in;
-	 Line = Line_in;
-	 Nametag = Nametag_in;
+	 Lines_Table = Talker_Info.Lines_Table;
+	 Line = Talker_Info.First_Block_Name;
+	 Nametag = Talker_Info.Nametag;
 	 Controller_Rotation = Controller_Rotation_in;
 	 Repossess_Target = Repossess_Target_in;
  }
