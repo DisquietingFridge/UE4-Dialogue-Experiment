@@ -65,7 +65,10 @@ void ADialoguePawn::BeginPlay()
 
 	Dialogue_Window = NewObject<UDialogueWidget>(this, Window_Class);
 	
-	if (Dialogue_Window) Dialogue_Window->AddToViewport(0);
+	if (Dialogue_Window) {
+		Dialogue_Window->AddToViewport(0);
+		Dialogue_Window->SetVisibility(ESlateVisibility::Visible);
+	}
 }
 
 // Called every frame
