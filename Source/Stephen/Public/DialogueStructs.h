@@ -2,9 +2,11 @@
 
 #pragma once
 
+class UDataTable;
+
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "DialogueData.generated.h"
+#include "DialogueStructs.generated.h"
 
 /**
  * 
@@ -17,7 +19,7 @@ struct STEPHEN_API FDialogueData : public FTableRowBase
 
 public:
 
-	FDialogueData();
+	FDialogueData(){}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		int32 CharNum;
@@ -37,4 +39,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<FString> Delegates;
 
+};
+
+USTRUCT(BlueprintType)
+struct STEPHEN_API FTalkerStruct : public FTableRowBase
+{
+
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	FTalkerStruct(){}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FText Nametag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		class UDataTable* Lines_Table;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FName FirstBlockName;
 };
