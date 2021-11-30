@@ -16,27 +16,41 @@ class STEPHEN_API ADialoguePawn : public APawn
 	GENERATED_BODY()
 
 public:
+
+	int32 charIndex = 0;
+	int32 blocklen = 0;
+	FTimerHandle DialogueScanTimer;
 	
 	// Pertaining to data table
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FName Line;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Nametag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FName Next_Block_Name;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Nametag = FText::FromString("ERROR: UNDEFINED NAME");
 	
 	// Pertaining to original player controller
-	UPROPERTY(BlueprintReadWrite) class APawn* Repossess_Target;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator Controller_Rotation;
+	UPROPERTY(BlueprintReadWrite) class APawn* Repossess_Target = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator Controller_Rotation = FRotator(0);
 
 	// Pertaining to widget
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) TSubclassOf<UDialogueWidget> Window_Class;
-	UPROPERTY(BlueprintReadWrite) UDialogueWidget* Dialogue_Window;
+	UPROPERTY(BlueprintReadWrite) UDialogueWidget* Dialogue_Window = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Delay;
-	TCHAR CharMessage;
-	UPROPERTY(BlueprintReadWrite) FText Block_Text;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Period = 0.005;
+	UPROPERTY(BlueprintReadWrite) FString Block_Text = "";
 
 	// Delegates
 	DECLARE_MULTICAST_DELEGATE(GenericEvent)
 	GenericEvent AppendChar;
+
+	//UDELEGATE(BlueprintCallable)
+	DECLARE_DELEGATE(ButtonResponse)
+	ButtonResponse Skip_Or_Next;
+
+protected:
+
+
+
+public:
+
 	
 	UFUNCTION(BlueprintCallable)
 		void initDialoguePawn(
@@ -65,6 +79,18 @@ protected:
 		void Skip_Block();
 	virtual void Skip_Block_Implementation();
 
+	UFUNCTION()
+		void TimerFired();
+
+	UFUNCTION(BlueprintCallable)
+		void FireDelegate();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+		void Kill_Dialogue();
+	virtual void Kill_Dialogue_Implementation();
+
+
+	void Process_Row(FDialogueData* imported);
 
 public:	
 	// Called every frame

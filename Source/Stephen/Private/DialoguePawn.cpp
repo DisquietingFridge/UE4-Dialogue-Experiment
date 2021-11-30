@@ -8,23 +8,10 @@
 ADialoguePawn::ADialoguePawn()
 {
 	PrimaryActorTick.bStartWithTickEnabled = false;
-
-	Controller_Rotation = FRotator(0);
-	Repossess_Target = nullptr; 
-	Dialogue_Window = nullptr;
-	Lines_Table = nullptr;
-	Line = "";
-	Nametag = FText::FromString("ERROR: UNDEFINED NAME");
-
-	Dialogue_Window = nullptr;
-
-	Scan_Delay = 0.005;
-	CharMessage = CHAR(0);
-	Block_Text = FText::FromString("");
-
 	AppendChar.AddUObject(this, &ADialoguePawn::Drive_Append_Char);
-
 }
+
+
 
  void ADialoguePawn::initDialoguePawn(
 	 FTalkerStruct Talker_Info,
@@ -32,34 +19,90 @@ ADialoguePawn::ADialoguePawn()
 	 class APawn* Repossess_Target_in) {
 
 	 Lines_Table = Talker_Info.Lines_Table;
-	 Line = Talker_Info.First_Block_Name;
 	 Nametag = Talker_Info.Nametag;
 	 Controller_Rotation = Controller_Rotation_in;
 	 Repossess_Target = Repossess_Target_in;
+	 Next_Block_Name = Talker_Info.First_Block_Name;
+
+	 Next_Block();
+
+	
  }
 
  void ADialoguePawn::Drive_Append_Char()
  {
-	 if (Dialogue_Window) Dialogue_Window->Output_Append(CharMessage);
+	 if (Dialogue_Window) Dialogue_Window->Output_Append(Block_Text[charIndex]);
  }
 
  void ADialoguePawn::Drive_Set_Text()
  {
-	 Dialogue_Window->Output_Set(Block_Text.ToString());
+	Dialogue_Window->Output_Set(Block_Text);
  }
 
  void ADialoguePawn::Next_Block_Implementation()
  {
+
+	 Dialogue_Window->Output_Set("");
+	 charIndex = 0;
+	 FDialogueData* imported = Lines_Table->FindRow<FDialogueData>(Next_Block_Name, "");
+	 Process_Row(imported);
+	 GetWorldTimerManager().SetTimer(DialogueScanTimer, this, &ADialoguePawn::TimerFired, Scan_Period, true, Scan_Period);
+	 Skip_Or_Next.BindUObject(this, &ADialoguePawn::Skip_Block);
  }
 
  void ADialoguePawn::Skip_Block_Implementation()
  {
+	 GetWorldTimerManager().ClearTimer(DialogueScanTimer);
+
+	 Skip_Or_Next.Unbind();
+	 Skip_Or_Next.BindUObject(this, &ADialoguePawn::Next_Block);
+
+	 Drive_Set_Text();
+
  }
+
+ void ADialoguePawn::Kill_Dialogue_Implementation() {}
+
+
+ void ADialoguePawn::Process_Row(FDialogueData* imported) {
+
+	 if (imported) {
+		 Next_Block_Name = imported->NextBlockName;
+		 Block_Text = (imported->BlockText).ToString();
+		 blocklen = Block_Text.Len();
+	 }
+	 else {
+		 Kill_Dialogue();
+	 }
+ }
+
+ void ADialoguePawn::TimerFired()
+ {
+	 if (charIndex < blocklen) {
+		 AppendChar.Broadcast();
+		 charIndex++;
+	 }
+	 else {
+		 GetWorldTimerManager().ClearTimer(DialogueScanTimer);
+		 Skip_Or_Next.Unbind();
+		 Skip_Or_Next.BindUObject(this, &ADialoguePawn::Next_Block_Implementation);
+	 }
+
+ }
+
+ void ADialoguePawn::FireDelegate()
+ {
+	 Skip_Or_Next.ExecuteIfBound();
+ }
+
+
 
 // Called when the game starts or when spawned
 void ADialoguePawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//Dialogue window setup
 
 	Dialogue_Window = NewObject<UDialogueWidget>(this, Window_Class);
 	
@@ -67,6 +110,8 @@ void ADialoguePawn::BeginPlay()
 		Dialogue_Window->AddToViewport(0);
 		Dialogue_Window->SetVisibility(ESlateVisibility::Visible);
 	}
+
+	
 }
 
 // Called every frame

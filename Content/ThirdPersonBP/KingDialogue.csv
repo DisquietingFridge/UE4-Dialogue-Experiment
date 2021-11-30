@@ -1,8 +1,0 @@
-Name,CharNum,BlockText,Respond,NextBlockName,Responses,Delegates
-King0,1,my publisher says i can't put any more psychic guys in my books,FALSE,King1,,
-King1,1,do u think they would be mad if i wrote about a psychic cornfield,FALSE,King2,,
-King2,1,tbh i'm on kind of thin ice with corn stuff as well,TRUE,,"(""Res1"",""Res2"")",
-Res1,0,[KILL],FALSE,PlayerKill,,
-Res2,0,[SPARE],FALSE,PlayerSpare,,
-PlayerKill,0,"I had hoped you would take our warning about corn content more seriously. Clearly you cannot be trusted. Goodbye, Stephen.",FALSE,END,,"(""STEPHEN_KILLED"")"
-PlayerSpare,0,Get out of here. Don’t write about corn anymore if you know what’s good for you.,FALSE,END,,"(""STEPHEN_SPARED"")"
