@@ -3,10 +3,11 @@
 #pragma once
 
 class UDialogueWidget;
+class UDataTable;
+
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "Engine/DataTable.h"
 #include "DialogueStructs.h"
 #include "DialoguePawn.generated.h"
 

@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "DialogueStructs.h"
+#include "Engine/DataTable.h"
 #include "DialoguePawn.h"
 #include "DialogueWidget.h"
 
@@ -12,21 +13,20 @@ ADialoguePawn::ADialoguePawn()
 }
 
 
-
  void ADialoguePawn::initDialoguePawn(
 	 FTalkerStruct Talker_Info,
 	 FRotator Controller_Rotation_in,
 	 class APawn* Repossess_Target_in) {
 
+	 // init variables
 	 Lines_Table = Talker_Info.Lines_Table;
 	 Nametag = Talker_Info.Nametag;
 	 Controller_Rotation = Controller_Rotation_in;
 	 Repossess_Target = Repossess_Target_in;
 	 Next_Block_Name = Talker_Info.First_Block_Name;
 
+	 //kick off the first block of text
 	 Next_Block();
-
-	
  }
 
  void ADialoguePawn::Drive_Append_Char()
@@ -41,12 +41,17 @@ ADialoguePawn::ADialoguePawn()
 
  void ADialoguePawn::Next_Block_Implementation()
  {
-
+	 //initialize things for new block
 	 Dialogue_Window->Output_Set("");
 	 charIndex = 0;
+
+	 //import and process table row
 	 FDialogueData* imported = Lines_Table->FindRow<FDialogueData>(Next_Block_Name, "");
 	 Process_Row(imported);
+
+	 //start timer
 	 GetWorldTimerManager().SetTimer(DialogueScanTimer, this, &ADialoguePawn::TimerFired, Scan_Period, true, Scan_Period);
+
 	 Skip_Or_Next.BindUObject(this, &ADialoguePawn::Skip_Block);
  }
 
@@ -54,7 +59,6 @@ ADialoguePawn::ADialoguePawn()
  {
 	 GetWorldTimerManager().ClearTimer(DialogueScanTimer);
 
-	 Skip_Or_Next.Unbind();
 	 Skip_Or_Next.BindUObject(this, &ADialoguePawn::Next_Block);
 
 	 Drive_Set_Text();
@@ -66,12 +70,12 @@ ADialoguePawn::ADialoguePawn()
 
  void ADialoguePawn::Process_Row(FDialogueData* imported) {
 
-	 if (imported) {
+	 if (imported) { // if row was found
 		 Next_Block_Name = imported->NextBlockName;
 		 Block_Text = (imported->BlockText).ToString();
 		 blocklen = Block_Text.Len();
 	 }
-	 else {
+	 else { // else exit dialogue
 		 Kill_Dialogue();
 	 }
  }
@@ -84,7 +88,6 @@ ADialoguePawn::ADialoguePawn()
 	 }
 	 else {
 		 GetWorldTimerManager().ClearTimer(DialogueScanTimer);
-		 Skip_Or_Next.Unbind();
 		 Skip_Or_Next.BindUObject(this, &ADialoguePawn::Next_Block_Implementation);
 	 }
 

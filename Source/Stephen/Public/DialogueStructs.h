@@ -2,8 +2,6 @@
 
 #pragma once
 
-class UDataTable;
-
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "DialogueStructs.generated.h"
