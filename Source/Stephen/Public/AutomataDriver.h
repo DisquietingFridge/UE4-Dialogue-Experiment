@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AutomataCell.h"
 #include "AutomataDriver.generated.h"
 
 UCLASS()
@@ -14,6 +15,12 @@ class STEPHEN_API AAutomataDriver : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AAutomataDriver();
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UAutomataCell> Cell_Type;
+
+	USceneComponent* Rooter;
+	UAutomataCell* Cell;
 
 protected:
 	// Called when the game starts or when spawned
