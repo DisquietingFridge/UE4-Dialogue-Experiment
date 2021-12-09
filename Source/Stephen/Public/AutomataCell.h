@@ -14,6 +14,14 @@ enum ECellState
 	Off UMETA(DisplayName = "Off"),
 };
 
+UENUM()
+enum EInstruction
+{
+	Die UMETA(DisplayName = "Die"),
+	Spawn UMETA(DisplayName = "Spawn"),
+	Nothing UMETA(DisplayName = "Do Nothing")
+};
+
 
 UCLASS()
 class STEPHEN_API UAutomataCell : public UStaticMeshComponent

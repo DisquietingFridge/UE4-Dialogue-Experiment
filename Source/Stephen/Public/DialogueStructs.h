@@ -39,7 +39,7 @@ public:
 
 };
 
-USTRUCT(BlueprintType)
+/*USTRUCT(BlueprintType)
 struct STEPHEN_API FTalkerStruct
 {
 
@@ -57,4 +57,4 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FName First_Block_Name;
-};
+};*/

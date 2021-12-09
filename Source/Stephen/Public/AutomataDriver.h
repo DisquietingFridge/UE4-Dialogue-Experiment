@@ -19,8 +19,15 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UAutomataCell> Cell_Type;
 
-	USceneComponent* Rooter;
-	UAutomataCell* Cell;
+	UPROPERTY(Blueprintable, EditAnywhere)
+		int32 Xdim= 10;
+	UPROPERTY(Blueprintable, EditAnywhere)
+		int32 Ydim = 10;
+
+	UPROPERTY(Blueprintable, EditAnywhere)
+		int32 offset = 100;
+
+	TArray<UAutomataCell*> Cell_Array;
 
 protected:
 	// Called when the game starts or when spawned

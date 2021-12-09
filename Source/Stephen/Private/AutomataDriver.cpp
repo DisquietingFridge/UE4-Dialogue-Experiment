@@ -9,8 +9,7 @@ AAutomataDriver::AAutomataDriver()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	Rooter = CreateOptionalDefaultSubobject<USceneComponent>(TEXT("Root Test"));
-	RootComponent = Rooter;
+	RootComponent = CreateOptionalDefaultSubobject<USceneComponent>(TEXT("Root Test"));
 
 }
 
@@ -20,11 +19,15 @@ void AAutomataDriver::BeginPlay()
 	Super::BeginPlay();
 
 	if (Cell_Type) {
-		Cell = NewObject<UAutomataCell>(this, Cell_Type, TEXT("Son"));
-		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, (Cell->GetName() + " created"));
-		Cell->RegisterComponent();
-		//this->SetRootComponent(Cell);
-		Cell->AttachToComponent(this->GetRootComponent(), FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+		int32 len = Xdim * Ydim;
+		for (int32 i = 0; i < len; i++)
+		{
+			Cell_Array.Add(NewObject<UAutomataCell>(this, Cell_Type));
+			Cell_Array[i]->RegisterComponent();
+			Cell_Array[i]->AttachToComponent(this->GetRootComponent(), FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+			Cell_Array[i]->SetRelativeTransform(FTransform(FVector((i%Xdim)*offset, (i/Ydim)*offset, 0)));
+
+		}
 	}
 
 	
@@ -34,7 +37,6 @@ void AAutomataDriver::BeginPlay()
 void AAutomataDriver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UE_LOG(LogTemp, Warning, TEXT("Driver created"));
 
 }
 

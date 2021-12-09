@@ -21,8 +21,8 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FTalkerStruct Talker_Info;
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FTalkerStruct Talker_Info;*/
 
 public:	
 	// Called every frame
