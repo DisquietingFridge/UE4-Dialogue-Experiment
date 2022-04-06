@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "DialogueDriver.h"
 #include "DialogueStructs.h"
 #include "Engine/DataTable.h"
-#include "DialogueDriver.h"
 #include "DialogueWidget.h"
 
 // Sets default values
@@ -118,6 +118,7 @@ void UDialogueDriver::BeginPlay()
 
 	GetOwner()->InputComponent = NewObject<UInputComponent>(GetOwner()); // initialize input component
     GetOwner()->InputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &UDialogueDriver::FireDelegate);
+	StartDialogue();
 	//Dialogue window setup
 	
 }
