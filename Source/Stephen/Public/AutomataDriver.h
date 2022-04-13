@@ -38,8 +38,16 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere)
 		float P = 0.4; // Probability when initializing that a cell will start off alive.
 
-	TArray<int32> Previous_States;
-	TArray<int32> Next_States;
+	UPROPERTY(Blueprintable, EditAnywhere)
+		TSet<uint8> Birth;
+
+	UPROPERTY(Blueprintable, EditAnywhere)
+		TSet<uint8> Survive;
+
+
+
+	TArray<bool> Previous_States;
+	TArray<bool> Next_States;
 
 
 	UPROPERTY(Blueprintable, EditAnywhere)
