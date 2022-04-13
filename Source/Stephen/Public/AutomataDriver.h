@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "AutomataCell.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "AutomataDriver.generated.h"
@@ -50,8 +49,8 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere)
 		float P = 0.4; // Probability when initializing that a cell will start off alive.
 
-	TArray<bool> Previous_States;
-	TArray<bool> Next_States;
+	TArray<int32> Previous_States;
+	TArray<int32> Next_States;
 
 
 	UPROPERTY(Blueprintable, EditAnywhere)
@@ -64,6 +63,8 @@ protected:
 
 	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
 		float period = 1;
+
+	float freq;
 
 	float theta = 0;
 

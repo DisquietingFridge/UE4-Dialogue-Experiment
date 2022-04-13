@@ -12,6 +12,8 @@ AAutomataDriver::AAutomataDriver()
 
 	RootComponent = CreateOptionalDefaultSubobject<USceneComponent>(TEXT("Root Component"));
 
+	freq = float(1 / period);
+
 }
 
 void AAutomataDriver::PreInitializeComponents()
@@ -41,24 +43,18 @@ void AAutomataDriver::BeginPlay()
 
 
 
-	FVector BaseTranslation = GetTransform().GetLocation();
-
-
 	for (int32 i = 0; i < Xdim * Zdim; i++)
 	{
 		int32 newX = i % Xdim;
-		int32 newZ = i / Zdim;
+		int32 newZ = i / Xdim;
 
-		Cell_Instance->AddInstance(FTransform(BaseTranslation + (FVector(newX, 0, newZ) * offset)));
-		
+		Cell_Instance->AddInstance(FTransform((FVector(newX, 0, newZ) * offset)));
+
 
 		Next_States.Add((float(rand()) / float(RAND_MAX)) < P); // Initialize next state based on cell probability
 
-		//debuggy test line dw about it
-		Previous_States.Add(!Next_States.Last());
-
-		//Cell_Instance->SetCustomDataValue(i, 0, Previous_States[i], false);
-		//Cell_Instance->SetCustomDataValue(i, 1, Next_States[i], false);
+		
+		Previous_States.Add(1 - Next_States.Last());
 	}
 
 	GetWorldTimerManager().SetTimer(AutomataTimer, this, &AAutomataDriver::StepComplete, period, true, 0);
@@ -69,23 +65,94 @@ void AAutomataDriver::BeginPlay()
 
 void AAutomataDriver::StepComplete()
 {
-	collection->SetScalarParameterValue(TEXT("fractionComplete"), 1);
-	SetActorTickEnabled(false);
 
+	int zUp;
+	int zDown;
+	int xUp;
+	int xDown;
 
 	// reset time cycle
-	theta = 0;
-	collection->SetScalarParameterValue(TEXT("fractionComplete"), theta);
+	collection->SetScalarParameterValue(TEXT("fractionComplete"), theta = 0);
 
-	for (int i = 0; i < Next_States.Num(); i++)
-	{
-		bool temp = Previous_States[i];
+	// every tile- set this tile's PrevState to equal this tile's NextState
+
+	for (int i = 0; i < Previous_States.Num(); i++) {
 		Previous_States[i] = Next_States[i];
-		Next_States[i] = temp;
+	}
 
-		Cell_Instance->SetCustomDataValue(i, 0, Previous_States[i], true);
-		Cell_Instance->SetCustomDataValue(i, 1, Next_States[i], true);
+	// every tile- collect neighbors' PrevStates, assign this tile's new NextState
+			//set this tile's custom instance data from PrevStates and NewStates
+	for (int z = 0; z < Zdim; z++) {
+		
+		if (z + 1 == Zdim) {
+			zUp = 0;
+		}
+		else {
+			zUp = z + 1;
+		}
 
+		if (z == 0) {
+			zDown = Zdim - 1;
+		} 
+		else {
+			zDown = z - 1;
+		}
+
+		for (int x = 0; x < Xdim; x++) {
+
+			if (x + 1 == Xdim) {
+				xUp = 0;
+			}
+			else {
+				xUp = x + 1;
+			}
+
+			if (x == 0) {
+				xDown = Xdim - 1;
+			}
+			else {
+				xDown = x - 1;
+			}
+
+			int aliveNeighbors =
+				//lower row
+				Previous_States[xDown + (Zdim * zDown)] +
+				Previous_States[x + (Zdim * zDown)] +
+				Previous_States[xUp + (Zdim * zDown)] +
+
+				//same row
+				Previous_States[xDown + (Zdim * z)] +
+				Previous_States[xUp + (Zdim * z)] +
+
+				//upper row
+				Previous_States[xDown + (Zdim * zUp)] +
+				Previous_States[x + (Zdim * zUp)] +
+				Previous_States[xUp + (Zdim * zUp)];
+
+			int i = x + (Zdim * z);
+			
+			if (Previous_States[i] == 1) { // alive cell
+				if ((aliveNeighbors == 2) || (aliveNeighbors == 3)) { // Any live cell with two or three live neighbours survives.
+					Next_States[i] = 1;
+				}
+				else { // otherwise live cell dies
+					Next_States[i] = 0;
+				}
+			}
+			else { // dead cell
+				if (aliveNeighbors == 3) {
+					Next_States[i] = 1; // Any dead cell with three live neighbours becomes a live cell.
+				}
+				else {
+					Next_States[i] = 0; // otherwise stays dead
+				}
+			}
+		
+			// update cell material
+			Cell_Instance->SetCustomDataValue(i, 0, Previous_States[i], true);
+			Cell_Instance->SetCustomDataValue(i, 1, Next_States[i], true);
+
+		}
 	}
 }
 
@@ -94,8 +161,8 @@ void AAutomataDriver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float deltaFrac = DeltaTime / period;
-	theta = theta + deltaFrac;
+	theta = theta + (DeltaTime * freq);
+
 	collection->SetScalarParameterValue(TEXT("fractionComplete"), theta);
 	
 
