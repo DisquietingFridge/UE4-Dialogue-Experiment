@@ -5,15 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/InstancedStaticMeshComponent.h"
-#include "Materials/MaterialParameterCollectionInstance.h"
 #include "AutomataDriver.generated.h"
-
-//states:
-
-// 0: previously off, staying off
-// 1: previously off, switching on
-// 2: previously on, switching off
-// 3: previously on, staying on
 
 UCLASS()
 class STEPHEN_API AAutomataDriver : public AActor
@@ -37,11 +29,8 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere)
 		UMaterialInterface* Mat;
 
-	UPROPERTY(Blueprintable, EditAnywhere)
-		UMaterialParameterCollection* params;
 
-	UPROPERTY(Blueprintable)
-		UMaterialParameterCollectionInstance* collection;
+	UMaterialInstanceDynamic* DynMaterial;
 
 	UPROPERTY()
 		UInstancedStaticMeshComponent* Cell_Instance;

@@ -12,6 +12,8 @@ AAutomataDriver::AAutomataDriver()
 
 	RootComponent = CreateOptionalDefaultSubobject<USceneComponent>(TEXT("Root Component"));
 
+
+
 	freq = float(1 / period);
 
 }
@@ -24,12 +26,12 @@ void AAutomataDriver::PreInitializeComponents()
 	Cell_Instance->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	Cell_Instance->RegisterComponent();
 	Cell_Instance->SetStaticMesh(Mesh);
-	Cell_Instance->SetMaterial(0, Mat);
+
+	DynMaterial = UMaterialInstanceDynamic::Create(Mat, this);
+	Cell_Instance->SetMaterial(0, DynMaterial);
+	DynMaterial->SetScalarParameterValue("FractionComplete", 0);
+
 	AddInstanceComponent(Cell_Instance);
-
-	collection = GetWorld()->GetParameterCollectionInstance(params);
-	collection->SetScalarParameterValue(TEXT("fractionComplete"), 1);
-
 
 	Cell_Instance->NumCustomDataFloats = 2;
 
@@ -40,8 +42,6 @@ void AAutomataDriver::PreInitializeComponents()
 void AAutomataDriver::BeginPlay()
 {
 	Super::BeginPlay();
-
-
 
 	for (int32 i = 0; i < Xdim * Zdim; i++)
 	{
@@ -72,7 +72,7 @@ void AAutomataDriver::StepComplete()
 	int xDown;
 
 	// reset time cycle
-	collection->SetScalarParameterValue(TEXT("fractionComplete"), theta = 0);
+	DynMaterial->SetScalarParameterValue(TEXT("fractionComplete"), theta = 0);
 
 	// every tile- set this tile's PrevState to equal this tile's NextState
 
@@ -129,7 +129,7 @@ void AAutomataDriver::StepComplete()
 				Previous_States[x + (Zdim * zUp)] +
 				Previous_States[xUp + (Zdim * zUp)];
 
-			int i = x + (Zdim * z);
+			int32 i = x + (Zdim * z);
 			
 			if (Previous_States[i] == 1) { // alive cell
 				if ((aliveNeighbors == 2) || (aliveNeighbors == 3)) { // Any live cell with two or three live neighbours survives.
@@ -163,7 +163,7 @@ void AAutomataDriver::Tick(float DeltaTime)
 
 	theta = theta + (DeltaTime * freq);
 
-	collection->SetScalarParameterValue(TEXT("fractionComplete"), theta);
+	DynMaterial->SetScalarParameterValue(TEXT("FractionComplete"), theta);
 	
 
 }
