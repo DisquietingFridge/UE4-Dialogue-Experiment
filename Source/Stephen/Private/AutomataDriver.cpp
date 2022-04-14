@@ -3,18 +3,18 @@
 
 #include "AutomataDriver.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Misc/Char.h"
 
 // Sets default values
 AAutomataDriver::AAutomataDriver()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = CreateOptionalDefaultSubobject<USceneComponent>(TEXT("Root Component"));
 
-
-
-	freq = float(1 / period);
+	
 
 }
 
@@ -29,7 +29,11 @@ void AAutomataDriver::PreInitializeComponents()
 
 	DynMaterial = UMaterialInstanceDynamic::Create(Mat, this);
 	Cell_Instance->SetMaterial(0, DynMaterial);
+
 	DynMaterial->SetScalarParameterValue("FractionComplete", 0);
+	DynMaterial->SetScalarParameterValue("PhaseExponent", phaseExponent);
+	DynMaterial->SetScalarParameterValue("EmissiveMultiplier", emissiveMultiplier);
+	DynMaterial->SetScalarParameterValue("Freq", float(1 / period));
 
 	AddInstanceComponent(Cell_Instance);
 
@@ -42,6 +46,18 @@ void AAutomataDriver::PreInitializeComponents()
 void AAutomataDriver::BeginPlay()
 {
 	Super::BeginPlay();
+
+	for (TCHAR character : Birth) {
+		if (TChar<TCHAR>::IsDigit(character)) {
+			BirthRules.Add(TChar<TCHAR>::ConvertCharDigitToInt(character));
+		}
+	}
+
+	for (TCHAR character : Survive) {
+		if (TChar<TCHAR>::IsDigit(character)) {
+			SurviveRules.Add(TChar<TCHAR>::ConvertCharDigitToInt(character));
+		}
+	}
 
 	Next_States.Reserve(Xdim * Zdim);
 	Previous_States.Reserve(Xdim * Zdim);
@@ -57,7 +73,16 @@ void AAutomataDriver::BeginPlay()
 		Next_States.Add((float(rand()) / float(RAND_MAX)) < P); // Initialize next state based on cell probability
 
 		Previous_States.Add(!Next_States.Last());
-	}
+
+		Cell_Instance->PerInstanceSMCustomData[i] = float(Previous_States[i]);
+		Cell_Instance->PerInstanceSMCustomData[i + 1] = float(Next_States[i]);
+		
+
+		//Cell_Instance->InstanceUpdateCmdBuffer.Edit();
+
+
+	}Cell_Instance->InstanceUpdateCmdBuffer.NumEdits++;
+	
 
 	GetWorldTimerManager().SetTimer(AutomataTimer, this, &AAutomataDriver::StepComplete, period, true, 0);
 
@@ -66,10 +91,10 @@ void AAutomataDriver::BeginPlay()
 
 
 void AAutomataDriver::StepComplete()
-{
+ {
 	// reset time cycle
-	DynMaterial->SetScalarParameterValue(TEXT("fractionComplete"), theta = 0);
-
+	//DynMaterial->SetScalarParameterValue("FractionComplete", theta = 0);
+	DynMaterial->SetScalarParameterValue("PrevTime", GetWorld()->GetTimeSeconds());
 	// every tile- set this tile's PrevState to equal this tile's NextState
 	ParallelFor(Previous_States.Num(), [&](int32 i) {
 		Previous_States[i] = Next_States[i];
@@ -135,34 +160,30 @@ void AAutomataDriver::StepComplete()
 			uint8(Previous_States[xUp + (Zdim * zUp)]);
 
 		if (Previous_States[i] == true) { // alive cell
-			if (Survive.Contains(aliveNeighbors)) { // Any live cell with appropriate amount of neighbors survives
-				Next_States[i] = true;
-			}
-			else { // otherwise live cell dies
-				Next_States[i] = false;
-			}
+			Next_States[i] = SurviveRules.Contains(aliveNeighbors);  // Any live cell with appropriate amount of neighbors survives
 		}
 		else { // dead cell
-			if (Birth.Contains(aliveNeighbors)) { //Any dead cell with  appropriate amount of neighbors becomes alive
-				Next_States[i] = true;
-			}
-			else {
-				Next_States[i] = false; // otherwise stays dead
-			}
+			Next_States[i] = BirthRules.Contains(aliveNeighbors); //Any dead cell with  appropriate amount of neighbors becomes alive
 		}
 
 		// update cell material
-		Mutex.Lock();
-		Cell_Instance->SetCustomDataValue(i, 0, Previous_States[i], true);
-		Mutex.Unlock();
+		Cell_Instance->PerInstanceSMCustomData[i*2] = float(Previous_States[i]);
+		Cell_Instance->PerInstanceSMCustomData[i*2 + 1] = float(Next_States[i]);
 
-		if (Next_States[i] != Previous_States[i]) {
+		
+		
 
-			Mutex.Lock();
-			Cell_Instance->SetCustomDataValue(i, 1, Next_States[i], true);
-			Mutex.Unlock();
-		}
+		/*Mutex.Lock();
+		Cell_Instance->SetCustomDataValue(i, 0, Previous_States[i],true);
+		Cell_Instance->SetCustomDataValue(i, 1, Next_States[i],true);
+		Mutex.Unlock();*/
+		
+		
 	});
+	Cell_Instance->MarkRenderStateDirty();
+	Cell_Instance->InstanceUpdateCmdBuffer.NumEdits++;
+
+	
 
 }
 
@@ -171,7 +192,7 @@ void AAutomataDriver::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	DynMaterial->SetScalarParameterValue(TEXT("FractionComplete"), theta = theta + (DeltaTime * freq));
+	//DynMaterial->SetScalarParameterValue(TEXT("FractionComplete"), theta = theta + (DeltaTime * freq));
 	
 }
 

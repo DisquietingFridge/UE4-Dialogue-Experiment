@@ -39,10 +39,13 @@ protected:
 		float P = 0.4; // Probability when initializing that a cell will start off alive.
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		TSet<uint8> Birth;
+		FString Birth;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		TSet<uint8> Survive;
+		FString Survive;
+
+	TSet<int32> BirthRules;
+	TSet<int32> SurviveRules;
 
 
 
@@ -61,9 +64,11 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
 		float period = 1;
 
-	float freq;
+	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+		float phaseExponent = 1;
 
-	float theta = 0;
+	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+		float emissiveMultiplier = 20;
 
 	FTimerHandle AutomataTimer;
 
