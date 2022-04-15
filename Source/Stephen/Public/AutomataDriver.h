@@ -70,6 +70,9 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
 		float emissiveMultiplier = 20;
 
+	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+		float stepsToFade = 5;
+
 	FTimerHandle AutomataTimer;
 
 	UFUNCTION()

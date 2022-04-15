@@ -34,6 +34,8 @@ void AAutomataDriver::PreInitializeComponents()
 	DynMaterial->SetScalarParameterValue("PhaseExponent", phaseExponent);
 	DynMaterial->SetScalarParameterValue("EmissiveMultiplier", emissiveMultiplier);
 	DynMaterial->SetScalarParameterValue("Freq", float(1 / period));
+	DynMaterial->SetScalarParameterValue("StepsToFade", stepsToFade);
+
 
 	AddInstanceComponent(Cell_Instance);
 
@@ -74,11 +76,18 @@ void AAutomataDriver::BeginPlay()
 
 		Previous_States.Add(!Next_States.Last());
 
-		Cell_Instance->PerInstanceSMCustomData[i] = float(Previous_States[i]);
-		Cell_Instance->PerInstanceSMCustomData[i + 1] = float(Next_States[i]);
-		
+		if (Next_States[i]) { // if starting on
 
-		//Cell_Instance->InstanceUpdateCmdBuffer.Edit();
+			Cell_Instance->PerInstanceSMCustomData[2 * i] = 0; // switched on at time 0
+			Cell_Instance->PerInstanceSMCustomData[2 * i + 1] = -1; // switched off at arbitrary time before that
+
+		}
+		else { // starting off
+
+			Cell_Instance->PerInstanceSMCustomData[2 * i] = -(stepsToFade * period) - 1;
+			Cell_Instance->PerInstanceSMCustomData[2 * i + 1] = -stepsToFade*period; // switched off long enough to have faded to 0
+
+		}
 
 
 	}Cell_Instance->InstanceUpdateCmdBuffer.NumEdits++;
@@ -94,7 +103,8 @@ void AAutomataDriver::StepComplete()
  {
 	// reset time cycle
 	//DynMaterial->SetScalarParameterValue("FractionComplete", theta = 0);
-	DynMaterial->SetScalarParameterValue("PrevTime", GetWorld()->GetTimeSeconds());
+	float time = GetWorld()->GetTimeSeconds();
+	//DynMaterial->SetScalarParameterValue("PrevTime", GetWorld()->GetTimeSeconds());
 	// every tile- set this tile's PrevState to equal this tile's NextState
 	ParallelFor(Previous_States.Num(), [&](int32 i) {
 		Previous_States[i] = Next_States[i];
@@ -146,18 +156,18 @@ void AAutomataDriver::StepComplete()
 
 		uint8 aliveNeighbors =
 			//lower row
-			uint8(Previous_States[xDown + (Zdim * zDown)]) +
-			uint8(Previous_States[x + (Zdim * zDown)]) +
-			uint8(Previous_States[xUp + (Zdim * zDown)]) +
+			uint8(Previous_States[xDown + (Xdim * zDown)]) +
+			uint8(Previous_States[x + (Xdim * zDown)]) +
+			uint8(Previous_States[xUp + (Xdim * zDown)]) +
 
 			//same row
-			uint8(Previous_States[xDown + (Zdim * z)]) +
-			uint8(Previous_States[xUp + (Zdim * z)]) +
+			uint8(Previous_States[xDown + (Xdim * z)]) +
+			uint8(Previous_States[xUp + (Xdim * z)]) +
 
 			//upper row
-			uint8(Previous_States[xDown + (Zdim * zUp)]) +
-			uint8(Previous_States[x + (Zdim * zUp)]) +
-			uint8(Previous_States[xUp + (Zdim * zUp)]);
+			uint8(Previous_States[xDown + (Xdim * zUp)]) +
+			uint8(Previous_States[x + (Xdim * zUp)]) +
+			uint8(Previous_States[xUp + (Xdim * zUp)]);
 
 		if (Previous_States[i] == true) { // alive cell
 			Next_States[i] = SurviveRules.Contains(aliveNeighbors);  // Any live cell with appropriate amount of neighbors survives
@@ -167,16 +177,23 @@ void AAutomataDriver::StepComplete()
 		}
 
 		// update cell material
-		Cell_Instance->PerInstanceSMCustomData[i*2] = float(Previous_States[i]);
+		if (Next_States[i] != Previous_States[i]) { // a change has occurred
+			if (Next_States[i] == true) {
+				Cell_Instance->PerInstanceSMCustomData[i * 2] = time; // register switched-on time
+			}
+			else {
+				Cell_Instance->PerInstanceSMCustomData[i * 2 + 1] = time; // register switched-off time
+			}
+		}
+
+
+		/*
+		Cell_Instance->PerInstanceSMCustomData[i * 2] = float(Previous_States[i]);
 		Cell_Instance->PerInstanceSMCustomData[i*2 + 1] = float(Next_States[i]);
+		*/
+	
 
 		
-		
-
-		/*Mutex.Lock();
-		Cell_Instance->SetCustomDataValue(i, 0, Previous_States[i],true);
-		Cell_Instance->SetCustomDataValue(i, 1, Next_States[i],true);
-		Mutex.Unlock();*/
 		
 		
 	});
