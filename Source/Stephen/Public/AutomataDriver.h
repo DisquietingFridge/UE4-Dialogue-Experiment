@@ -2,10 +2,45 @@
 
 #pragma once
 
+class AAutomataDriver;
+
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "AutomataDriver.generated.h"
+
+
+
+class STEPHEN_API CellProcessor : public FNonAbandonableTask
+{
+	friend class FAsyncTask<CellProcessor>;
+
+public:
+
+	CellProcessor(AAutomataDriver* driver);
+
+protected:
+	class AAutomataDriver* driver = nullptr;
+
+	int Xdim;
+	int Zdim;
+
+	TSharedPtr<TSet<int32>> BirthRules = nullptr;
+	TSharedPtr<TSet<int32>> SurviveRules = nullptr;
+
+	TSharedPtr<TArray<bool>> Previous_States = nullptr;
+	TSharedPtr<TArray<bool>> Next_States = nullptr;
+
+public:
+	void Initialize(TSharedPtr<AAutomataDriver> driver);
+	void DoWork();
+
+
+	FORCEINLINE TStatId GetStatId() const
+	{
+		RETURN_QUICK_DECLARE_CYCLE_STAT(ExampleAsyncTask, STATGROUP_ThreadPoolAsyncTasks);
+	}
+};
 
 UCLASS()
 class STEPHEN_API AAutomataDriver : public AActor
@@ -32,6 +67,10 @@ protected:
 
 	UMaterialInstanceDynamic* DynMaterial;
 
+	FAsyncTask<CellProcessor>* Processor;
+
+
+
 	UPROPERTY()
 		UInstancedStaticMeshComponent* Cell_Instance;
 
@@ -49,8 +88,10 @@ protected:
 
 
 
-	TArray<bool> Previous_States;
-	TArray<bool> Next_States;
+	TSharedPtr<TArray<bool>> Previous_States = nullptr;
+	TSharedPtr<TArray<bool>> Next_States = nullptr;
+	//TArray<bool> Previous_States;
+	//TArray<bool> Next_States;
 
 
 	UPROPERTY(Blueprintable, EditAnywhere)
@@ -61,16 +102,17 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere)
 		int32 offset = 10;
 
-	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+	UPROPERTY(Blueprintable, EditAnywhere) // time per step in seconds
 		float period = 1;
 
-	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+	UPROPERTY(Blueprintable, EditAnywhere) // exponent for switching off
 		float phaseExponent = 1;
 
-	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+
+	UPROPERTY(Blueprintable, EditAnywhere) 
 		float emissiveMultiplier = 20;
 
-	UPROPERTY(Blueprintable, EditAnywhere) // time in seconds per automata step
+	UPROPERTY(Blueprintable, EditAnywhere) // how many steps a dying cell takes to fade out
 		float stepsToFade = 5;
 
 	FTimerHandle AutomataTimer;
@@ -84,5 +126,42 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION()
+		int getXdim()
+	{
+		return this->Xdim;
+	}
+
+	UFUNCTION()
+		int getZdim()
+	{
+		return this->Zdim;
+	}
+
+
+		TSharedPtr<TSet<int32>> getBirthRules()
+	{
+		return MakeShareable(&(this->BirthRules));
+	}
+
+
+		TSharedPtr<TSet<int32>> getSurviveRules()
+	{
+		return MakeShareable(&(this->SurviveRules));
+	}
+
+
+		TSharedPtr<TArray<bool>> getPreviousStates()
+	{
+		return this->Previous_States;
+	}
+
+
+		TSharedPtr<TArray<bool>> getNextStates()
+	{
+		return this->Next_States;
+	}
+
 
 };
