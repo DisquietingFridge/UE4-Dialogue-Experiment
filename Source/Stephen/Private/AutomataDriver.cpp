@@ -118,13 +118,14 @@ void AAutomataDriver::StepComplete()
  {
 
 	// have all the cells' next state calcualted before sending to material
-	Processor->EnsureCompletion();
-
+	if (!(Processor->IsDone())) {
+		Processor->EnsureCompletion();
+	}
 	
 	// update cell material
-	float time = GetWorld()->GetTimeSeconds();
+	//float time = GetWorld()->GetTimeSeconds();
 
-	ParallelFor((*Previous_States).Num(), [&](int32 i) {
+	/*ParallelFor((*Previous_States).Num(), [&](int32 i) {
 
 
 		if ((*Next_States)[i] != (*Previous_States)[i]) { // a change has occurred
@@ -135,7 +136,7 @@ void AAutomataDriver::StepComplete()
 				Cell_Instance->PerInstanceSMCustomData[i * 2 + 1] = time; // register switched-off time
 			}
 		}
-	});
+	});*/
 	Cell_Instance->MarkRenderStateDirty();
 	Cell_Instance->InstanceUpdateCmdBuffer.NumEdits++;
 
@@ -194,12 +195,16 @@ CellProcessor::CellProcessor(AAutomataDriver* driver)
 		BirthRules = driver->getBirthRules();
 		SurviveRules = driver->getSurviveRules();
 
+		Cell_Instance = driver->getCellInstance();
+
 		Previous_States = driver->getPreviousStates();
 		Next_States = driver->getNextStates();
 	}
 
 	void CellProcessor::DoWork()
 	{
+
+		float time = driver->GetWorld()->GetTimeSeconds();
 		ParallelFor((*Previous_States).Num(), [&](int32 i) {
 
 			int32 zUp;
@@ -261,5 +266,17 @@ CellProcessor::CellProcessor(AAutomataDriver* driver)
 			else { // dead cell
 				(*Next_States)[i] = (*BirthRules).Contains(aliveNeighbors); //Any dead cell with  appropriate amount of neighbors becomes alive
 			}
-		});
+
+
+			if ((*Next_States)[i] != (*Previous_States)[i]) { // a change has occurred
+				if ((*Next_States)[i] == true) {
+					Cell_Instance->PerInstanceSMCustomData[i * 2] = time; // register switched-on time
+				}
+				else {
+					Cell_Instance->PerInstanceSMCustomData[i * 2 + 1] = time; // register switched-off time
+				}
+			}
+		}
+		
+		);
 	}

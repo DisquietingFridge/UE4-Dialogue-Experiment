@@ -28,6 +28,9 @@ protected:
 	TSharedPtr<TSet<int32>> BirthRules = nullptr;
 	TSharedPtr<TSet<int32>> SurviveRules = nullptr;
 
+	UPROPERTY()
+		UInstancedStaticMeshComponent* Cell_Instance;
+
 	TSharedPtr<TArray<bool>> Previous_States = nullptr;
 	TSharedPtr<TArray<bool>> Next_States = nullptr;
 
@@ -162,6 +165,10 @@ public:
 	{
 		return this->Next_States;
 	}
+
+		UInstancedStaticMeshComponent* getCellInstance() {
+			return this->Cell_Instance;
+		}
 
 
 };
