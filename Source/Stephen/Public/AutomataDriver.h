@@ -17,22 +17,25 @@ class STEPHEN_API CellProcessor : public FNonAbandonableTask
 
 public:
 
-	CellProcessor(AAutomataDriver* driver);
+	CellProcessor(AAutomataDriver* Driver);
 
 protected:
-	class AAutomataDriver* driver = nullptr;
+	class AAutomataDriver* Driver = nullptr;
 
-	int Xdim;
-	int Zdim;
+	int XDim;
+	int ZDim;
+
 
 	TSharedPtr<TSet<int32>> BirthRules = nullptr;
 	TSharedPtr<TSet<int32>> SurviveRules = nullptr;
 
 	UPROPERTY()
-		UInstancedStaticMeshComponent* Cell_Instance;
+		UInstancedStaticMeshComponent* CellInstance;
 
-	TSharedPtr<TArray<bool>> Previous_States = nullptr;
-	TSharedPtr<TArray<bool>> Next_States = nullptr;
+	TSharedPtr<TArray<bool>> CurrentStates = nullptr;
+	TSharedPtr<TArray<bool>> NextStates = nullptr;
+
+	TSharedPtr<TArray<uint32>> Neighbors = nullptr;
 
 public:
 	void Initialize(TSharedPtr<AAutomataDriver> driver);
@@ -75,48 +78,49 @@ protected:
 
 
 	UPROPERTY()
-		UInstancedStaticMeshComponent* Cell_Instance;
+		UInstancedStaticMeshComponent* CellInstance;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		float P = 0.4; // Probability when initializing that a cell will start off alive.
+		float Probability = 0.4; // Probability when initializing that a cell will start off alive.
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		FString Birth;
+		FString BirthString;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		FString Survive;
+		FString SurviveString;
 
 	TSet<int32> BirthRules;
 	TSet<int32> SurviveRules;
 
 
 
-	TSharedPtr<TArray<bool>> Previous_States = nullptr;
-	TSharedPtr<TArray<bool>> Next_States = nullptr;
-	//TArray<bool> Previous_States;
-	//TArray<bool> Next_States;
+	TSharedPtr<TArray<bool>> CurrentStates = nullptr;
+	TSharedPtr<TArray<bool>> NextStates = nullptr;
+
+	TSharedPtr<TArray<uint32>> Neighbors = nullptr;
 
 
-	UPROPERTY(Blueprintable, EditAnywhere)
-		int32 Xdim = 10;
-	UPROPERTY(Blueprintable, EditAnywhere)
-		int32 Zdim = 10;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		int32 offset = 10;
+		int32 XDim = 10;
+	UPROPERTY(Blueprintable, EditAnywhere)
+		int32 ZDim = 10;
+
+	UPROPERTY(Blueprintable, EditAnywhere)
+		int32 Offset = 10;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // time per step in seconds
-		float period = 1;
+		float StepPeriod = 1;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // exponent for switching off
-		float phaseExponent = 1;
+		float PhaseExponent = 1;
 
 
 	UPROPERTY(Blueprintable, EditAnywhere) 
-		float emissiveMultiplier = 20;
+		float EmissiveMultiplier = 20;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // how many steps a dying cell takes to fade out
-		float stepsToFade = 5;
+		float StepsToFade = 5;
 
 	FTimerHandle AutomataTimer;
 
@@ -127,48 +131,50 @@ protected:
 
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
-		int getXdim()
+		int GetXDim()
 	{
-		return this->Xdim;
+		return this->XDim;
 	}
 
 	UFUNCTION()
-		int getZdim()
+		int GetZDim()
 	{
-		return this->Zdim;
+		return this->ZDim;
 	}
 
 
-		TSharedPtr<TSet<int32>> getBirthRules()
+		TSharedPtr<TSet<int32>> GetBirthRules()
 	{
 		return MakeShareable(&(this->BirthRules));
 	}
 
-
-		TSharedPtr<TSet<int32>> getSurviveRules()
+		TSharedPtr<TSet<int32>> GetSurviveRules()
 	{
 		return MakeShareable(&(this->SurviveRules));
 	}
 
-
-		TSharedPtr<TArray<bool>> getPreviousStates()
+		TSharedPtr<TArray<bool>> GetCurrentStates()
 	{
-		return this->Previous_States;
+		return this->CurrentStates;
 	}
 
-
-		TSharedPtr<TArray<bool>> getNextStates()
+		TSharedPtr<TArray<bool>> GetNextStates()
 	{
-		return this->Next_States;
+		return this->NextStates;
 	}
 
-		UInstancedStaticMeshComponent* getCellInstance() {
-			return this->Cell_Instance;
+		TSharedPtr<TArray<uint32>> GetNeighbors()
+		{
+			return this->Neighbors;
 		}
+
+		UInstancedStaticMeshComponent* GetCellInstance() {
+			return this->CellInstance;
+		}
+
+		void InitNeighborIndices();
 
 
 };
