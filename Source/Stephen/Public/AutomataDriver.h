@@ -25,6 +25,8 @@ protected:
 	int XDim;
 	int ZDim;
 
+	float StepPeriod;
+
 
 	TSharedPtr<TSet<int32>> BirthRules = nullptr;
 	TSharedPtr<TSet<int32>> SurviveRules = nullptr;
@@ -62,6 +64,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void PreInitializeComponents() override;
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
@@ -84,10 +87,10 @@ protected:
 		float Probability = 0.4; // Probability when initializing that a cell will start off alive.
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		FString BirthString;
+		FString BirthString = TEXT("3");
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		FString SurviveString;
+		FString SurviveString = TEXT("23");
 
 	TSet<int32> BirthRules;
 	TSet<int32> SurviveRules;
@@ -109,12 +112,16 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere)
 		int32 Offset = 10;
 
+	UPROPERTY(Blueprintable, EditAnywhere)
+		float PeriodOffset = 0.5;
+
 	UPROPERTY(Blueprintable, EditAnywhere) // time per step in seconds
 		float StepPeriod = 1;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // exponent for switching off
 		float PhaseExponent = 1;
 
+		float Time = 0;
 
 	UPROPERTY(Blueprintable, EditAnywhere) 
 		float EmissiveMultiplier = 20;
@@ -122,10 +129,14 @@ protected:
 	UPROPERTY(Blueprintable, EditAnywhere) // how many steps a dying cell takes to fade out
 		float StepsToFade = 5;
 
-	FTimerHandle AutomataTimer;
+	FTimerHandle StepTimer;
+	FTimerHandle InstanceUpdateTimer;
 
 	UFUNCTION()
 		void StepComplete();
+
+	UFUNCTION()
+		void UpdateInstance();
 
 
 
@@ -170,9 +181,21 @@ public:
 			return this->Neighbors;
 		}
 
-		UInstancedStaticMeshComponent* GetCellInstance() {
-			return this->CellInstance;
+		UInstancedStaticMeshComponent* GetCellInstance() 
+		{
+			return CellInstance;
 		}
+
+		float GetStepPeriod()
+		{
+			return StepPeriod;
+		}
+
+		float GetTime() 
+		{
+			return Time;
+		}
+
 
 		void InitNeighborIndices();
 

@@ -10,24 +10,11 @@
 
 static uint8 NumCustomData = 2;
 
-
-
-
 // Sets default values
 AAutomataDriver::AAutomataDriver()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	RootComponent = CreateOptionalDefaultSubobject<USceneComponent>(TEXT("Root Component"));
-
-	// create arrays for pointers to reference
-	TSharedPtr<TArray<bool>> currstates(new(TArray<bool>));
-	TSharedPtr<TArray<bool>> nextstates(new(TArray<bool>));
-	TSharedPtr<TArray<uint32>> neighbors(new(TArray<uint32>));
-
-	CurrentStates = currstates;
-	NextStates = nextstates;
-	Neighbors = neighbors;
-	
 	
 }
 
@@ -35,24 +22,98 @@ void AAutomataDriver::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
 
+	DynMaterial = UMaterialInstanceDynamic::Create(Mat, this);
+	DynMaterial->SetScalarParameterValue("PhaseExponent", PhaseExponent);
+	DynMaterial->SetScalarParameterValue("EmissiveMultiplier", EmissiveMultiplier);
+	DynMaterial->SetScalarParameterValue("FadePerSecond", 1 / (StepPeriod*StepsToFade));
+	DynMaterial->SetScalarParameterValue("StepTransitionTime", StepPeriod);
+
 	CellInstance = NewObject<UInstancedStaticMeshComponent>(this);
 	CellInstance->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	CellInstance->RegisterComponent();
 	CellInstance->SetStaticMesh(Mesh);
-	
 	CellInstance->SetMobility(EComponentMobility::Static);
-
-	DynMaterial = UMaterialInstanceDynamic::Create(Mat, this);
 	CellInstance->SetMaterial(0, DynMaterial);
-
-	DynMaterial->SetScalarParameterValue("PhaseExponent", PhaseExponent);
-	DynMaterial->SetScalarParameterValue("EmissiveMultiplier", EmissiveMultiplier);
-	DynMaterial->SetScalarParameterValue("Freq", 1 / StepPeriod);
-	DynMaterial->SetScalarParameterValue("StepsToFade", StepsToFade);
-
 	AddInstanceComponent(CellInstance);
-
 	CellInstance->NumCustomDataFloats = NumCustomData;
+}
+
+void AAutomataDriver::PostInitializeComponents()
+{
+
+	Super::PostInitializeComponents();
+
+	// create rulesets from input strings. 
+	// e.g. FString Birth = "3", Survive = "23" for Conway's Game of Life
+
+	for (TCHAR character : BirthString)
+	{
+		if (TChar<TCHAR>::IsDigit(character))
+		{
+			BirthRules.Add(TChar<TCHAR>::ConvertCharDigitToInt(character));
+		}
+	}
+	for (TCHAR character : SurviveString)
+	{
+		if (TChar<TCHAR>::IsDigit(character))
+		{
+			SurviveRules.Add(TChar<TCHAR>::ConvertCharDigitToInt(character));
+		}
+	}
+
+	TSharedPtr<TArray<bool>> currstates(new(TArray<bool>));
+	CurrentStates = currstates;
+	CurrentStates->Init(0, XDim * ZDim);
+
+	TArray<FTransform> transforms;
+	transforms.Init(FTransform(), XDim * ZDim);
+
+	// calculate transforms and current-state for each cell
+	ParallelFor(XDim * ZDim, [&](int32 CellID)
+	{
+		// derive grid coordinates from index
+		int32 NewX = CellID % XDim;
+		int32 NewZ = CellID / XDim;
+
+		//Instance's transform is based on its grid coordinate
+		transforms[CellID] = FTransform((FVector(NewX, 0, NewZ) * Offset));
+
+		// Initialize state based on probability of being alive
+		(*CurrentStates)[CellID] = (float(rand()) < (float(RAND_MAX) * Probability));
+	});
+
+	CellInstance->AddInstances(transforms, false);
+	CellInstance->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CellInstance->SetComponentTickEnabled(false);
+
+	ParallelFor(XDim * ZDim, [&](int32 CellID)
+	{ // set starting state in the "Next" slot (will be shifted to "Current" when true Next is calculated)
+		if ((*CurrentStates)[CellID])
+		{// set switch-off time to the future
+			CellInstance->PerInstanceSMCustomData[NumCustomData * CellID + 1] = StepPeriod * 2; 
+		}
+		else
+		{ // set switch-off time far enough in the past to have faded completely
+			CellInstance->PerInstanceSMCustomData[NumCustomData * CellID + 1] = -StepPeriod * StepsToFade; 
+		}
+ 
+	});
+
+	// neighborhood setup
+	TSharedPtr<TArray<uint32>> neighbors(new(TArray<uint32>));
+	Neighbors = neighbors;
+	InitNeighborIndices();
+
+	// time to calculate nextsteps
+	TSharedPtr<TArray<bool>> nextstates(new(TArray<bool>));
+	NextStates = nextstates;
+	NextStates->Init(0, XDim * ZDim);
+	Processor = new FAsyncTask<CellProcessor>(this);
+	Time = GetWorld()->GetTimeSeconds();
+	Processor->StartSynchronousTask();
+
+	CellInstance->InstanceUpdateCmdBuffer.NumEdits++;
+	CellInstance->MarkRenderStateDirty();
 }
 
 
@@ -61,93 +122,39 @@ void AAutomataDriver::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// create rulesets from input strings. 
-	// e.g. FString Birth = "3", Survive = "23" for Conway's Game of Life
-	for (TCHAR character : BirthString) 
-	{
-		if (TChar<TCHAR>::IsDigit(character)) 
-		{
-			BirthRules.Add(TChar<TCHAR>::ConvertCharDigitToInt(character));
-		}
-	}
-	for (TCHAR character : SurviveString) 
-	{
-		if (TChar<TCHAR>::IsDigit(character)) 
-		{
-			SurviveRules.Add(TChar<TCHAR>::ConvertCharDigitToInt(character));
-		}
-	}
-
-	//For the Next or Previous states, we need to store as many states as there are cells
-	CurrentStates->Reserve(XDim * ZDim);
-	NextStates->Reserve(XDim * ZDim);
-	InitNeighborIndices();
-
-	for (int32 CellID = 0; CellID < XDim * ZDim; ++CellID)
-	{
-		// derive grid coordinates from index
-		int32 NewX = CellID % XDim;
-		int32 NewZ = CellID / XDim;
-
-		//Instance's transform is based on its grid coordinate
-		CellInstance->AddInstance(FTransform((FVector(NewX, 0, NewZ) * Offset)));
-
-		// Initialize state based on probability of being alive
-		NextStates->Add((float(rand()) < (float(RAND_MAX) * Probability))); 
-
-		// making previous state same as next state (as opposed to opposite) seems to be required. 
-		// investigate why, but not super important 
-		//(*CurrentStates).Add(!(*NextStates).Last());
-		CurrentStates->Add(NextStates->Last());
-
-		// define material data based on starting state
-		int32 CellDataStart = NumCustomData * CellID;
-		if ((*NextStates)[CellID]) 
-		{ 
-			CellInstance->PerInstanceSMCustomData[CellDataStart] = 0; // switched on at time 0
-			CellInstance->PerInstanceSMCustomData[CellDataStart + 1] = -1; // switched off at arbitrary time before that
-		}
-		else 
-		{
-			CellInstance->PerInstanceSMCustomData[CellDataStart] = -(StepsToFade * StepPeriod) - 1;
-			CellInstance->PerInstanceSMCustomData[CellDataStart + 1] = -StepsToFade*StepPeriod; // switched off long enough to have faded to 0
-		}
-	}
-
-	CellInstance->InstanceUpdateCmdBuffer.NumEdits++;
-	CellInstance->MarkRenderStateDirty();
-	
-	
-
-	CellInstance->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CellInstance->SetComponentTickEnabled(false);
-
-	Processor = new FAsyncTask<CellProcessor>(this);
-	Processor->StartBackgroundTask();
+	//Time = GetWorld()->GetTimeSeconds();
 	
 	// we are ready to start the iteration steps.
-	GetWorldTimerManager().SetTimer(AutomataTimer, this, &AAutomataDriver::StepComplete, StepPeriod, true, 0);
-
+	GetWorldTimerManager().SetTimer(StepTimer, this, &AAutomataDriver::StepComplete, StepPeriod, true, 0);
+	GetWorldTimerManager().SetTimer(InstanceUpdateTimer, this, &AAutomataDriver::UpdateInstance, StepPeriod, true, StepPeriod*(1+PeriodOffset));
 }
 
 void AAutomataDriver::StepComplete()
  {
 
 	// have all the cells' next state calculated before sending to material
+	Time = GetWorld()->GetTimeSeconds();
+
+	Processor->EnsureCompletion();
+	
+	// make new Current state the old Next state.
+
+	ParallelFor((*CurrentStates).Num(), [&](int32 i) {
+		(*CurrentStates)[i] = (*NextStates)[i];
+	});
+	
+	// kick off calculation of next stage
+	Processor->StartBackgroundTask();
+
+}
+
+void AAutomataDriver::UpdateInstance()
+{
 	Processor->EnsureCompletion();
 
 	CellInstance->MarkRenderStateDirty();
 	CellInstance->InstanceUpdateCmdBuffer.NumEdits++;
-	
-
-	//make previous state the next state
-	ParallelFor(CurrentStates->Num(), [&](int32 CellID) 
-	{
-		(*CurrentStates)[CellID] = (*NextStates)[CellID];
-	});
-
-	// kick off calculation of next stage
-	Processor->StartBackgroundTask();
+	DynMaterial->SetScalarParameterValue("StepTransitionTime", Time + StepPeriod);
 
 }
 
@@ -242,12 +249,14 @@ CellProcessor::CellProcessor(AAutomataDriver* Driver)
 		CurrentStates = Driver->GetCurrentStates();
 		NextStates = Driver->GetNextStates();
 		Neighbors = Driver->GetNeighbors();
+
+		StepPeriod = Driver->GetStepPeriod();
 	}
 
 	void CellProcessor::DoWork()
 	{
 
-		float time = Driver->GetWorld()->GetTimeSeconds();
+		float NextStepTime = Driver->GetTime() + StepPeriod;
 		ParallelFor(CurrentStates->Num(), [&](int32 CellID) 
 		{
 			// Query the cell's neighborhood to sum its alive neighbors
@@ -269,17 +278,26 @@ CellProcessor::CellProcessor(AAutomataDriver* Driver)
 				(*NextStates)[CellID] = BirthRules->Contains(AliveNeighbors); //Any dead cell with appropriate amount of neighbors becomes alive
 			}
 
-			if ((*NextStates)[CellID] != (*CurrentStates)[CellID]) // a change has occurred
+			int32 NextDataID = NumCustomData * CellID + 1;
+
+			//shift material state in time
+			CellInstance->PerInstanceSMCustomData[NextDataID - 1] = CellInstance->PerInstanceSMCustomData[NextDataID];
+
+			if ((*NextStates)[CellID])
 			{ // register change based on state
-				int32 CellDataStart = NumCustomData * CellID;
-				if ((*NextStates)[CellID]) 
-				{ 
-					CellInstance->PerInstanceSMCustomData[CellDataStart] = time;
+				CellInstance->PerInstanceSMCustomData[NextDataID] = NextStepTime + 3*StepPeriod; // switch-off time is in the future, i.e. cell is still on
+			}
+			else // is off at next time
+			{
+				if ((*CurrentStates)[CellID])  // was previously on
+				{ // register switch-off time as being upcoming step
+					CellInstance->PerInstanceSMCustomData[NextDataID] = NextStepTime;
 				}
-				else 
+				else // preserve old switch-off time
 				{
-					CellInstance->PerInstanceSMCustomData[CellDataStart + 1] = time;
+					CellInstance->PerInstanceSMCustomData[NextDataID] = CellInstance->PerInstanceSMCustomData[NextDataID - 1];
 				}
+				
 			}
 		}
 		
