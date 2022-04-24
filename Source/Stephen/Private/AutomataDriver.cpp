@@ -7,8 +7,9 @@
 #include "Misc/Char.h"
 #include "Async/Async.h"
 #include "Async/AsyncWork.h"
+#include "Containers/ArrayView.h"
 
-static uint8 NumCustomData = 2;
+static uint8 NumCustomData = 9;
 
 // Sets default values
 AAutomataDriver::AAutomataDriver()
@@ -23,19 +24,29 @@ void AAutomataDriver::PreInitializeComponents()
 	Super::PreInitializeComponents();
 
 	DynMaterial = UMaterialInstanceDynamic::Create(Mat, this);
+
 	DynMaterial->SetScalarParameterValue("PhaseExponent", PhaseExponent);
 	DynMaterial->SetScalarParameterValue("EmissiveMultiplier", EmissiveMultiplier);
-	DynMaterial->SetScalarParameterValue("FadePerSecond", 1 / (StepPeriod*StepsToFade));
-	DynMaterial->SetScalarParameterValue("StepTransitionTime", StepPeriod);
+	DynMaterial->SetScalarParameterValue("FadePerSecond", 1 / (StepPeriod * StepsToFade));
+	//DynMaterial->SetScalarParameterValue("StepTransitionTime", StepPeriod);
 
-	CellInstance = NewObject<UInstancedStaticMeshComponent>(this);
-	CellInstance->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	CellInstance->RegisterComponent();
-	CellInstance->SetStaticMesh(Mesh);
-	CellInstance->SetMobility(EComponentMobility::Static);
-	CellInstance->SetMaterial(0, DynMaterial);
-	AddInstanceComponent(CellInstance);
-	CellInstance->NumCustomDataFloats = NumCustomData;
+
+	//Set up InstanceComponents
+	ClusterInstances.Reserve(Divisions);
+	for (int i = 0; i < Divisions; ++i)
+	{
+		UInstancedStaticMeshComponent* NewClusterInstance = NewObject<UInstancedStaticMeshComponent>(this);
+
+		NewClusterInstance->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+		NewClusterInstance->RegisterComponent();
+		NewClusterInstance->SetStaticMesh(Mesh);
+		NewClusterInstance->SetMobility(EComponentMobility::Static);
+		NewClusterInstance->SetMaterial(0, DynMaterial);
+		AddInstanceComponent(NewClusterInstance);
+		NewClusterInstance->NumCustomDataFloats = NumCustomData;
+
+		ClusterInstances.Add(NewClusterInstance);
+	}
 }
 
 void AAutomataDriver::PostInitializeComponents()
@@ -61,42 +72,89 @@ void AAutomataDriver::PostInitializeComponents()
 		}
 	}
 
+	uint32 NumClusters = XDim * ZDim;
+	uint32 NumCells = 4 * NumClusters;
+
+	// initialize CurrentStates
 	TSharedPtr<TArray<bool>> currstates(new(TArray<bool>));
 	CurrentStates = currstates;
-	CurrentStates->Init(0, XDim * ZDim);
+	CurrentStates->Init(0, NumCells);
 
-	TArray<FTransform> transforms;
-	transforms.Init(FTransform(), XDim * ZDim);
+	// Initialize Transforms
+	TArray<FTransform> Transforms;
+	Transforms.Init(FTransform(), NumClusters);
 
-	// calculate transforms and current-state for each cell
-	ParallelFor(XDim * ZDim, [&](int32 CellID)
+	// calculate transforms for each cluster
+	ParallelFor(NumClusters, [&](int32 ClusterID)
 	{
 		// derive grid coordinates from index
-		int32 NewX = CellID % XDim;
-		int32 NewZ = CellID / XDim;
+		int32 ClusterX = ClusterID % XDim;
+		int32 ClusterZ = ClusterID / XDim;
 
 		//Instance's transform is based on its grid coordinate
-		transforms[CellID] = FTransform((FVector(NewX, 0, NewZ) * Offset));
+		Transforms[ClusterID] = FTransform((FVector(ClusterX, 0, ClusterZ) * Offset));
+	});
 
+	// calculate state for each cell
+	ParallelFor(NumCells, [&](int32 CellID)
+	{
 		// Initialize state based on probability of being alive
+
 		(*CurrentStates)[CellID] = (float(rand()) < (float(RAND_MAX) * Probability));
 	});
 
-	CellInstance->AddInstances(transforms, false);
-	CellInstance->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CellInstance->SetComponentTickEnabled(false);
+	// the last ClusterInstance component may have fewer cells assigned to it
+	int MaxClustersPerInstance = int(ceilf(float(NumClusters) / float(Divisions)));
+	// Add instances to each ClusterInstance component, applying appropriate transform
+	for (uint32 ClusterID = 0; ClusterID < NumClusters; ++ClusterID)
+	{
+		int InstanceIndex = ClusterID / MaxClustersPerInstance;
+		ClusterInstances[InstanceIndex]->AddInstance(Transforms[ClusterID]);
+	}
+	
+	// make sure all instance components have no collision and no ticking
+	for (UInstancedStaticMeshComponent* ClusterInstance : ClusterInstances)
+	{
+		ClusterInstance->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ClusterInstance->SetComponentTickEnabled(false);
+	}
+	
 
-	ParallelFor(XDim * ZDim, [&](int32 CellID)
-	{ // set starting state in the "Next" slot (will be shifted to "Current" when true Next is calculated)
-		if ((*CurrentStates)[CellID])
-		{// set switch-off time to the future
-			CellInstance->PerInstanceSMCustomData[NumCustomData * CellID + 1] = StepPeriod * 2; 
+	// set starting state in the "Next" slot
+	// (will be set to "Current" slot when actual Next is calculated)
+	ParallelFor(NumClusters, [&](int32 ClusterID)
+	{
+		int InstanceIndex = ClusterID / MaxClustersPerInstance;
+		int InstanceClusterID = ClusterID - InstanceIndex * MaxClustersPerInstance;
+
+		int32 ClusterX = ClusterID % XDim;
+		int32 ClusterZ = ClusterID / XDim;
+
+		//CellIDs contained within this cluster
+		TArray<uint32> CellIDs
+		{
+			(2 * ClusterZ * 2 * XDim) + (2 * ClusterX), // bottom left
+			(2 * ClusterZ * 2 * XDim) + (2 * ClusterX + 1), // bottom right
+			((2 * ClusterZ + 1) * 2 * XDim) + (2 * ClusterX), // upper left
+			((2 * ClusterZ + 1) * 2 * XDim) + (2 * ClusterX + 1), // upper right
+		};
+
+		for (uint8 Quadrant = 0; Quadrant < 4; ++Quadrant)
+		{
+
+			uint8 DataIndex = NumCustomData * InstanceClusterID + (2 * Quadrant) + 1;
+
+			if ((*CurrentStates)[CellIDs[Quadrant]])
+			{// set switch-off time to the far future
+				ClusterInstances[InstanceIndex]->PerInstanceSMCustomData[DataIndex] = StepPeriod * 2;
+			}
+			else
+			{ // set switch-off time far enough in the past to have faded completely
+				ClusterInstances[InstanceIndex]->PerInstanceSMCustomData[DataIndex] = -2 * (StepPeriod * StepsToFade);
+			}
+
 		}
-		else
-		{ // set switch-off time far enough in the past to have faded completely
-			CellInstance->PerInstanceSMCustomData[NumCustomData * CellID + 1] = -StepPeriod * StepsToFade; 
-		}
- 
+		
 	});
 
 	// neighborhood setup
@@ -104,16 +162,37 @@ void AAutomataDriver::PostInitializeComponents()
 	Neighbors = neighbors;
 	InitNeighborIndices();
 
-	// time to calculate nextsteps
+	// Initializing Nextsteps
 	TSharedPtr<TArray<bool>> nextstates(new(TArray<bool>));
 	NextStates = nextstates;
-	NextStates->Init(0, XDim * ZDim);
-	Processor = new FAsyncTask<CellProcessor>(this);
-	Time = GetWorld()->GetTimeSeconds();
-	Processor->StartSynchronousTask();
+	NextStates->Init(0, NumCells);
 
-	CellInstance->InstanceUpdateCmdBuffer.NumEdits++;
-	CellInstance->MarkRenderStateDirty();
+	// create processors
+	Processors.Reserve(Divisions);
+	for (int i = 0; i < Divisions; ++i)
+	{
+		uint32 StartingIndex = i * MaxClustersPerInstance;
+		FAsyncTask<CellProcessor>* NewProcessor = new FAsyncTask<CellProcessor>(this, ClusterInstances[i], StartingIndex);
+		Processors.Add(NewProcessor);
+	}
+
+	Time = GetWorld()->GetTimeSeconds();
+
+	// start the processes (to calculate Next Step for all the cells)
+	CurrentProcess = 0;
+	Processors[CurrentProcess]->StartSynchronousTask();
+	// having kicked off the first process, they should all cascade to completion, until the final one is complete
+	// wait until the last process is complete, but don't start it by itself.
+	Processors[Divisions - 1]->EnsureCompletion(false);
+
+
+	// mark everything as dirty (do we need to do this as part of initialization?)
+	for (UInstancedStaticMeshComponent* ClusterInstance : ClusterInstances)
+	{
+		ClusterInstance->InstanceUpdateCmdBuffer.NumEdits++;
+		ClusterInstance->MarkRenderStateDirty();
+	}
+	
 }
 
 
@@ -122,63 +201,106 @@ void AAutomataDriver::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//Time = GetWorld()->GetTimeSeconds();
+	//Though we should be currently at time 0, we put time a bit ahead
+	// Since we're skipping a period before starting our timers/processors
+	Time = StepPeriod;
 	
 	// we are ready to start the iteration steps.
-	GetWorldTimerManager().SetTimer(StepTimer, this, &AAutomataDriver::StepComplete, StepPeriod, true, 0);
-	GetWorldTimerManager().SetTimer(InstanceUpdateTimer, this, &AAutomataDriver::UpdateInstance, StepPeriod, true, StepPeriod*(1+PeriodOffset));
+	float TimeFraction = 1 / float (Divisions + 1);
+	GetWorldTimerManager().SetTimer(StepTimer, this, &AAutomataDriver::TimerFired, StepPeriod * TimeFraction, true, StepPeriod);
+	//GetWorldTimerManager().SetTimer(InstanceUpdateTimer, this, &AAutomataDriver::UpdateInstance, StepPeriod, true, StepPeriod*(1+PeriodOffset));
+}
+
+void AAutomataDriver::TimerFired()
+{
+	if (MaterialToUpdate != Divisions)
+	{
+		UpdateInstance(MaterialToUpdate);
+		MaterialToUpdate++;
+		
+	}
+	else
+	{
+		StepComplete();
+	}
 }
 
 void AAutomataDriver::StepComplete()
  {
 
 	// have all the cells' next state calculated before sending to material
+	// strictly speaking we only need to check the last one, but
+	// checking all for safety
+	for (FAsyncTask<CellProcessor>* Process : Processors)
+	{
+		Process->EnsureCompletion();
+	}
+	
 	Time = GetWorld()->GetTimeSeconds();
 
-	Processor->EnsureCompletion();
-	
 	// make new Current state the old Next state.
 
-	ParallelFor((*CurrentStates).Num(), [&](int32 i) {
+	ParallelFor((*CurrentStates).Num(), [&](int32 i) 
+	{
 		(*CurrentStates)[i] = (*NextStates)[i];
 	});
 	
 	// kick off calculation of next stage
-	Processor->StartBackgroundTask();
+	CurrentProcess = 0;
+	MaterialToUpdate = 0;
+	Processors[0]->EnsureCompletion();
+	Processors[0]->StartBackgroundTask();
 
 }
 
-void AAutomataDriver::UpdateInstance()
+void AAutomataDriver::UpdateInstance(uint32 Index)
 {
-	Processor->EnsureCompletion();
+	// Safety check
+	//Processors[Index]->EnsureCompletion();
 
-	CellInstance->MarkRenderStateDirty();
-	CellInstance->InstanceUpdateCmdBuffer.NumEdits++;
-	DynMaterial->SetScalarParameterValue("StepTransitionTime", Time + StepPeriod);
+	ClusterInstances[Index]->MarkRenderStateDirty();
+	ClusterInstances[Index]->InstanceUpdateCmdBuffer.NumEdits++;
+	//DynMaterials[Index]->SetScalarParameterValue("StepTransitionTime", Time + StepPeriod);
 
+}
+
+void AAutomataDriver::ProcessCompleted()
+{
+	CurrentProcess = (CurrentProcess + 1) % Divisions;
+
+	if (CurrentProcess != 0)
+	{
+		Processors[CurrentProcess]->EnsureCompletion();
+		Processors[CurrentProcess]->StartBackgroundTask();
+	}
 }
 
 // Define each cell's neighboring indices 
 // (factoring in grid wraparound) to look up 
 void AAutomataDriver::InitNeighborIndices()
 {
+	
+	int NumCells = XDim * ZDim * 4;
 	// A neighborhood is 8 cells, so number of
 	// neighbors will be (number of cells) times 8
-	Neighbors->Init(0, XDim * ZDim * 8);
+	Neighbors->Init(0, NumCells * 8);
 
-	ParallelFor(XDim * ZDim, [&](int32 CellID) 
+	ParallelFor(NumCells, [&](int32 CellID) 
 	{
 		int32 zUp; // vertical coordinate above this cell
 		int32 zDown; // vertical coordinate below this cell
 		int32 xUp; // horizontal coordinate ahead of this cell
 		int32 xDown; // horizontal coordinate behind this cell
 
+		int XCells = XDim * 2;
+		int ZCells = ZDim * 2;
+
 		// derive grid coordinates from index
-		int32 z = CellID / XDim;
-		int32 x = CellID % XDim;
+		int32 z = CellID / XCells;
+		int32 x = CellID % XCells;
 
 		// handle grid wrap-around in all four directions
-		if (z + 1 == ZDim) 
+		if (z + 1 == ZCells) 
 		{
 			zUp = 0;
 		}
@@ -189,14 +311,14 @@ void AAutomataDriver::InitNeighborIndices()
 
 		if (z == 0) 
 		{
-			zDown = ZDim - 1;
+			zDown = ZCells - 1;
 		}
 		else 
 		{
 			zDown = z - 1;
 		}
 
-		if (x + 1 == XDim) 
+		if (x + 1 == XCells) 
 		{
 			xUp = 0;
 		}
@@ -207,7 +329,7 @@ void AAutomataDriver::InitNeighborIndices()
 
 		if (x == 0) 
 		{
-			xDown = XDim - 1;
+			xDown = XCells - 1;
 		}
 		else 
 		{
@@ -218,88 +340,114 @@ void AAutomataDriver::InitNeighborIndices()
 		uint32 NeighborhoodStart = 8 * CellID;
 
 		//assign lower neighborhood row IDs
-		(*Neighbors)[NeighborhoodStart] = xDown + (XDim * zDown);
-		(*Neighbors)[NeighborhoodStart + 1] = x + (XDim * zDown);
-		(*Neighbors)[NeighborhoodStart + 2] = xUp + (XDim * zDown);
+		(*Neighbors)[NeighborhoodStart] = xDown + (XCells * zDown);
+		(*Neighbors)[NeighborhoodStart + 1] = x + (XCells * zDown);
+		(*Neighbors)[NeighborhoodStart + 2] = xUp + (XCells * zDown);
 
 		//assign middle neighborhood row IDs
-		(*Neighbors)[NeighborhoodStart + 3] = xDown + (XDim * z);
-		(*Neighbors)[NeighborhoodStart + 4] = xUp + (XDim * z);
+		(*Neighbors)[NeighborhoodStart + 3] = xDown + (XCells * z);
+		(*Neighbors)[NeighborhoodStart + 4] = xUp + (XCells * z);
 
 		// assign upper neighborhood row IDs
-		(*Neighbors)[NeighborhoodStart + 5] = xDown + (XDim * zUp);
-		(*Neighbors)[NeighborhoodStart + 6] = x + (XDim * zUp);
-		(*Neighbors)[NeighborhoodStart + 7] = xUp + (XDim * zUp);
+		(*Neighbors)[NeighborhoodStart + 5] = xDown + (XCells * zUp);
+		(*Neighbors)[NeighborhoodStart + 6] = x + (XCells * zUp);
+		(*Neighbors)[NeighborhoodStart + 7] = xUp + (XCells * zUp);
 	});
 }
 
 
-CellProcessor::CellProcessor(AAutomataDriver* Driver)
+CellProcessor::CellProcessor(AAutomataDriver* Driver, UInstancedStaticMeshComponent* ClusterInstance, uint32 StartingIndex)
 	{
 		this->Driver = Driver;
-
-		XDim = Driver->GetXDim();
-		ZDim = Driver->GetZDim();
+		this->ClusterInstance = ClusterInstance;
+		this->StartingIndex = StartingIndex;
+		
+		NumElements = ClusterInstance->GetInstanceCount();
 
 		BirthRules = Driver->GetBirthRules();
 		SurviveRules = Driver->GetSurviveRules();
-
-		CellInstance = Driver->GetCellInstance();
 
 		CurrentStates = Driver->GetCurrentStates();
 		NextStates = Driver->GetNextStates();
 		Neighbors = Driver->GetNeighbors();
 
 		StepPeriod = Driver->GetStepPeriod();
+
+		XDim = Driver->GetXDim();
 	}
 
 	void CellProcessor::DoWork()
 	{
-
 		float NextStepTime = Driver->GetTime() + StepPeriod;
-		ParallelFor(CurrentStates->Num(), [&](int32 CellID) 
+		ParallelFor(NumElements, [&](int32 ProcessorCluster) 
 		{
-			// Query the cell's neighborhood to sum its alive neighbors
-			uint8 AliveNeighbors = 0;
-			uint32 NeighborhoodStart = 8 * CellID;
-			for (uint8 NeighborID = 0; NeighborID < 8; ++NeighborID)
-			{
-				int32 CandidateCellID = Neighbors->operator[](NeighborhoodStart + NeighborID);
-				AliveNeighbors += int32(CurrentStates->operator[](CandidateCellID));
-			}
-		
-			// Apply automata rules
-			if ((*CurrentStates)[CellID]) 
-			{
-				(*NextStates)[CellID] =  SurviveRules->Contains(AliveNeighbors);  // Any live cell with appropriate amount of neighbors survives
-			}
-			else 
-			{
-				(*NextStates)[CellID] = BirthRules->Contains(AliveNeighbors); //Any dead cell with appropriate amount of neighbors becomes alive
-			}
+			int ClusterID = StartingIndex + ProcessorCluster;
 
-			int32 NextDataID = NumCustomData * CellID + 1;
+			int32 ClusterX = ClusterID % XDim;
+			int32 ClusterZ = ClusterID / XDim;
 
-			//shift material state in time
-			CellInstance->PerInstanceSMCustomData[NextDataID - 1] = CellInstance->PerInstanceSMCustomData[NextDataID];
-
-			if ((*NextStates)[CellID])
-			{ // register change based on state
-				CellInstance->PerInstanceSMCustomData[NextDataID] = NextStepTime + 3*StepPeriod; // switch-off time is in the future, i.e. cell is still on
-			}
-			else // is off at next time
+			TArray<uint32> CellIDs
 			{
-				if ((*CurrentStates)[CellID])  // was previously on
-				{ // register switch-off time as being upcoming step
-					CellInstance->PerInstanceSMCustomData[NextDataID] = NextStepTime;
-				}
-				else // preserve old switch-off time
+				(2 * ClusterZ * 2 * XDim) + (2 * ClusterX), // bottom left
+				(2 * ClusterZ * 2 * XDim) + (2 * ClusterX + 1), // bottom right
+				((2 * ClusterZ + 1) * 2 * XDim) + (2 * ClusterX), // upper left
+				((2 * ClusterZ + 1) * 2 * XDim) + (2 * ClusterX + 1), // upper right
+			};
+
+			for (int Quadrant = 0 ; Quadrant < 4 ; ++Quadrant)
+			{
+				uint32 CellID = CellIDs[Quadrant];
+
+				// Query the cell's neighborhood to sum its alive neighbors
+				uint8 AliveNeighbors = 0;
+				uint32 NeighborhoodStart = 8 * CellID;
+				for (uint8 NeighborID = 0; NeighborID < 8; ++NeighborID)
 				{
-					CellInstance->PerInstanceSMCustomData[NextDataID] = CellInstance->PerInstanceSMCustomData[NextDataID - 1];
+					int32 CandidateCellID = Neighbors->operator[](NeighborhoodStart + NeighborID);
+					AliveNeighbors += int(CurrentStates->operator[](CandidateCellID));
 				}
-				
+
+				// Apply automata rules
+				if ((*CurrentStates)[CellID])
+				{ // Any live cell with appropriate amount of neighbors survives
+					(*NextStates)[CellID] = SurviveRules->Contains(AliveNeighbors);
+				}
+				else
+				{ // Any dead cell with appropriate amount of neighbors becomes alive
+					(*NextStates)[CellID] = BirthRules->Contains(AliveNeighbors);
+				}
+
+				int32 NextDataID = NumCustomData * ProcessorCluster + 2*Quadrant + 1;
+				int32 TimeIndex = NumCustomData * ProcessorCluster + 8;
+
+				//shift material state in time, so "Next" becomes "Current"
+				ClusterInstance->PerInstanceSMCustomData[NextDataID - 1] = ClusterInstance->PerInstanceSMCustomData[NextDataID];
+
+				// register change based on state
+				if ((*NextStates)[CellID])
+				{  // switch-off time is in the future, i.e. cell is still on
+					ClusterInstance->PerInstanceSMCustomData[NextDataID] = NextStepTime + 3 * StepPeriod;
+				}
+				else // is off at next time
+				{
+					if ((*CurrentStates)[CellID])  // was previously on
+					{ // register switch-off time as being upcoming step
+						ClusterInstance->PerInstanceSMCustomData[NextDataID] = NextStepTime;
+					}
+					else // preserve old switch-off time
+					{
+						ClusterInstance->PerInstanceSMCustomData[NextDataID] = ClusterInstance->PerInstanceSMCustomData[NextDataID - 1];
+					}
+
+				}
+
+				// apply next time transition
+				ClusterInstance->PerInstanceSMCustomData[TimeIndex] = NextStepTime;
+
 			}
-		}
-		
-		);
+
+			
+		});
+
+		Driver->ProcessCompleted();
 	}

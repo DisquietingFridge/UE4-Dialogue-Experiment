@@ -17,22 +17,26 @@ class STEPHEN_API CellProcessor : public FNonAbandonableTask
 
 public:
 
-	CellProcessor(AAutomataDriver* Driver);
+	CellProcessor(AAutomataDriver* Driver, UInstancedStaticMeshComponent* CellInstance, uint32 StartingIndex);
 
 protected:
 	class AAutomataDriver* Driver = nullptr;
 
-	int XDim;
-	int ZDim;
 
 	float StepPeriod;
+
+	// Cell ID that the first Instance element corresponds to
+	uint32 StartingIndex;
+	uint32 NumElements;
+
+	uint32 XDim;
 
 
 	TSharedPtr<TSet<int32>> BirthRules = nullptr;
 	TSharedPtr<TSet<int32>> SurviveRules = nullptr;
 
 	UPROPERTY()
-		UInstancedStaticMeshComponent* CellInstance;
+		UInstancedStaticMeshComponent* ClusterInstance;
 
 	TSharedPtr<TArray<bool>> CurrentStates = nullptr;
 	TSharedPtr<TArray<bool>> NextStates = nullptr;
@@ -76,12 +80,15 @@ protected:
 
 	UMaterialInstanceDynamic* DynMaterial;
 
-	FAsyncTask<CellProcessor>* Processor;
+	UPROPERTY(Blueprintable, EditAnywhere)
+		int32 Divisions = 2;
+
+	TArray<FAsyncTask<CellProcessor>*> Processors;
 
 
 
 	UPROPERTY()
-		UInstancedStaticMeshComponent* CellInstance;
+		TArray<UInstancedStaticMeshComponent*> ClusterInstances;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
 		float Probability = 0.4; // Probability when initializing that a cell will start off alive.
@@ -102,21 +109,19 @@ protected:
 
 	TSharedPtr<TArray<uint32>> Neighbors = nullptr;
 
+	void InitNeighborIndices();
 
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		int32 XDim = 10;
+		uint32 XDim = 300;
 	UPROPERTY(Blueprintable, EditAnywhere)
-		int32 ZDim = 10;
+		uint32 ZDim = 300;
 
 	UPROPERTY(Blueprintable, EditAnywhere)
-		int32 Offset = 10;
-
-	UPROPERTY(Blueprintable, EditAnywhere)
-		float PeriodOffset = 0.5;
+		int32 Offset = 200;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // time per step in seconds
-		float StepPeriod = 1;
+		float StepPeriod = 0.01;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // exponent for switching off
 		float PhaseExponent = 1;
@@ -127,7 +132,7 @@ protected:
 		float EmissiveMultiplier = 20;
 
 	UPROPERTY(Blueprintable, EditAnywhere) // how many steps a dying cell takes to fade out
-		float StepsToFade = 5;
+		float StepsToFade = 1000;
 
 	FTimerHandle StepTimer;
 	FTimerHandle InstanceUpdateTimer;
@@ -136,24 +141,20 @@ protected:
 		void StepComplete();
 
 	UFUNCTION()
-		void UpdateInstance();
+		void UpdateInstance(uint32 Index);
+
+	UFUNCTION()
+		void TimerFired();
+
+	uint32 CurrentProcess = 0;
+	uint32 MaterialToUpdate = 0;
 
 
 
 
 public:	
 
-	UFUNCTION()
-		int GetXDim()
-	{
-		return this->XDim;
-	}
-
-	UFUNCTION()
-		int GetZDim()
-	{
-		return this->ZDim;
-	}
+	void ProcessCompleted();
 
 
 		TSharedPtr<TSet<int32>> GetBirthRules()
@@ -181,9 +182,9 @@ public:
 			return this->Neighbors;
 		}
 
-		UInstancedStaticMeshComponent* GetCellInstance() 
+		UInstancedStaticMeshComponent* GetCellInstance(int Index) 
 		{
-			return CellInstance;
+			return ClusterInstances[Index];
 		}
 
 		float GetStepPeriod()
@@ -196,8 +197,12 @@ public:
 			return Time;
 		}
 
+		uint32 GetXDim()
+		{
+			return XDim;
+		}
 
-		void InitNeighborIndices();
+		
 
 
 };
