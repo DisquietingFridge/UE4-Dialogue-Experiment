@@ -79,3 +79,7 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+/Source/Stephen/Public/AutomataDriver.h
+/Source/Stephen/Public/AutomataCell.h
+/Source/Stephen/Private/AutomataDriver.cpp
+/Source/Stephen/Private/AutomataCell.cpp
