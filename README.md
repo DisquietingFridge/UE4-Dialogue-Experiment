@@ -8,7 +8,7 @@ In terms of learning outcomes, the goals of this project were to:
 
 * Figure out how to use UE4's UI widgets.
 
-In the level, the player can walk up to prolific horror-author Stephen King and press "E", which will allow him to complain that his publisher want him to stop writing about psychic guys and cornfields.
+In the level, the player can walk up to prolific horror-author Stephen King and press "E", which will allow him to complain that his publisher wants him to stop writing about psychic guys and cornfields.
 
 <img src="https://user-images.githubusercontent.com/30654622/219537175-0611992e-99c5-49cd-9bf5-e0cacee73532.mp4" width="1%" height="1%">
 
