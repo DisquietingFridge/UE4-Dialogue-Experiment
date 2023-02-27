@@ -24,11 +24,10 @@ class STEPHEN_API IDialogueInterface
 
 public:
 
-	// asks subject to return the reference of the FString field it would like "driven".
-	virtual TSharedRef<FString> GetFieldRef();
+	virtual void SetBlockData(FText Block) {}
+	virtual bool RevealCharsAndIsDone(int amount = 1) { return true; }
+	virtual void HideAllChars() {}
+	virtual void RevealAllChars() {}
 
-	//transmits text to a recipient. Likely to be deprecated.
-	UFUNCTION(BlueprintCallable,BlueprintNativeEvent, Blueprintable)
-		void Send_Text(const FString& Sent_Text);
 
 };

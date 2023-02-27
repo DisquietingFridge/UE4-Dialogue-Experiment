@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-//#include "DialogueInterface.h"
+#include "DialogueInterface.h"
 #include "DialogueWidget.generated.h"
 
 
@@ -12,25 +12,22 @@
  * 
  */
 UCLASS(Blueprintable)
-class STEPHEN_API UDialogueWidget : public UUserWidget
+class STEPHEN_API UDialogueWidget : public UUserWidget, public IDialogueInterface
 {
 	GENERATED_BODY()
 
-private:
+public:
 
-	UPROPERTY()
-		FString Output_Text = "Output_Text initialized";
+	UPROPERTY(Blueprintable) FString DisplayedText = "Output_Text initialized";
+	UPROPERTY() FString FinalText;
 
 public:
 
-	UFUNCTION(BlueprintCallable)
-	void Output_Set(const FString& Sent_Text);
+	void SetBlockData(FText Block) override;
+	bool RevealCharsAndIsDone(int amount = 1) override;
+	void HideAllChars() override;
+	void RevealAllChars() override;
 
-
-	// Either append a single character or a string
-	void Output_Append(const TCHAR Sent_Char);
-	//string version is callable in blueprint
-	UFUNCTION(BlueprintCallable)
-	void Output_Append(const FString& Sent_Text);
+	
 
 };

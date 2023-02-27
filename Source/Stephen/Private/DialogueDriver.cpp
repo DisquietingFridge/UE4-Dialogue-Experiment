@@ -11,14 +11,13 @@ UDialogueDriver::UDialogueDriver()
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
- void UDialogueDriver::Next_Block_Implementation()
+void UDialogueDriver::StartNewBlock_Implementation(FName NextBlockName)
  {
 	 //initialize things for new block
-	 Dialogue_Window->Output_Set("");
-	 charIndex = 0;
+	Dialogue_Window->HideAllChars();
 
 	 //import and process table row
-	 FDialogueData* imported = Lines_Table->FindRow<FDialogueData>(Next_Block_Name, "");
+	 FDialogueData* imported = Lines_Table->FindRow<FDialogueData>(NextBlockName, "");
 	 Process_Row(imported);
 
 	 //start timer
@@ -27,16 +26,16 @@ UDialogueDriver::UDialogueDriver()
 	 CurrentState = BlockInProgress;
  }
 
- void UDialogueDriver::Skip_Block_Implementation()
+ void UDialogueDriver::FinishBlock_Implementation()
  {
 	 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
 
-	 Dialogue_Window->Output_Set(Block_Text);
+	 Dialogue_Window->SetBlockData(CurrentData.BlockText);
 
 	 CurrentState = BlockFinished;
  }
 
- void UDialogueDriver::Kill_Dialogue_Implementation() 
+ void UDialogueDriver::EndDialogue_Implementation() 
  {
 	 if (Dialogue_Window) {
 		 Dialogue_Window->RemoveFromViewport();
@@ -55,25 +54,18 @@ UDialogueDriver::UDialogueDriver()
 		 blocklen = Block_Text.Len();
 	 }
 	 else { // else exit dialogue
-		 Kill_Dialogue_Implementation();
+		 EndDialogue_Implementation();
 	 }
  }
 
  void UDialogueDriver::TimerFired()
  {
-	 if (charIndex < blocklen) {
-		 if (Dialogue_Window)
-		 {
-			 Dialogue_Window->Output_Append(Block_Text[charIndex]);
-			 charIndex++;
-		 }
-		 
-	 }
-	 else {
+	 //TODO: Probably should keep converted member after all to prevent this conversion all the time
+	 if (Dialogue_Window->RevealCharsAndIsDone())
+	 {
 		 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
 		 CurrentState = BlockFinished;
 	 }
-
  }
 
  void UDialogueDriver::DialogueInteractReceived()
@@ -81,10 +73,10 @@ UDialogueDriver::UDialogueDriver()
 	 switch (CurrentState)
 	 {
 	 case BlockFinished:
-		 Next_Block_Implementation();
+		 StartNewBlock_Implementation(CurrentData.NextBlockName);
 		 return;
 	 case BlockInProgress:
-		 Skip_Block_Implementation();
+		 FinishBlock_Implementation();
 		 return;
 	 }
  }
@@ -97,11 +89,10 @@ UDialogueDriver::UDialogueDriver()
 		 Dialogue_Window->AddToViewport(0);
 		 Dialogue_Window->SetVisibility(ESlateVisibility::Visible);
 
-		 Next_Block_Name = First_Block_Name;
-		 Next_Block_Implementation();
+		 StartNewBlock_Implementation(First_Block_Name);
 	 }
 	 else {
-		 Kill_Dialogue_Implementation();
+		 EndDialogue_Implementation();
 	 }
  }
 

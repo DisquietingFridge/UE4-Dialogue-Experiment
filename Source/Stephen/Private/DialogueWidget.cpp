@@ -3,17 +3,39 @@
 
 #include "DialogueWidget.h"
 
-void UDialogueWidget::Output_Set(const FString& Sent_Text)
+void UDialogueWidget::SetBlockData(FText Block)
 {
-    this->Output_Text = Sent_Text;
+	FinalText = Block.ToString();
+}
+//TODO: Allow this to support formatting characters
+bool UDialogueWidget::RevealCharsAndIsDone(int amount)
+{
+	if (DisplayedText.Len() >= FinalText.Len())
+	{
+		return true;
+	}
+
+	for (int i = 0; i < amount; ++i)
+	{
+		DisplayedText.AppendChar(FinalText[DisplayedText.Len()]);
+
+		if (DisplayedText.Len() == FinalText.Len())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
-void UDialogueWidget::Output_Append(const TCHAR Sent_Char)
+void UDialogueWidget::HideAllChars()
 {
-    this->Output_Text.FString::AppendChar(Sent_Char);
+	DisplayedText = "";
 }
 
-void UDialogueWidget::Output_Append(const FString& Sent_Text)
+void UDialogueWidget::RevealAllChars()
 {
-    this->Output_Text.FString::Append(Sent_Text);
+	DisplayedText = FinalText;
 }
+
+
