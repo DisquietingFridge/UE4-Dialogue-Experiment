@@ -49,6 +49,7 @@ public:
 protected:
 
 	DialogueState CurrentState;
+	FDialogueData CurrentData;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -60,12 +61,12 @@ protected:
 		void StartDialogue();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-		void Next_Block();
-	virtual void Next_Block_Implementation();
+		void StartNewBlock(FName NextBlockName);
+	virtual void StartNewBlock_Implementation(FName NextBlockName);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-		void Skip_Block();
-	virtual void Skip_Block_Implementation();
+		void FinishBlock();
+	virtual void FinishBlock_Implementation();
 
 	UFUNCTION()
 		void TimerFired();
@@ -74,8 +75,8 @@ protected:
 		void DialogueInteractReceived();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-		void Kill_Dialogue();
-	virtual void Kill_Dialogue_Implementation();
+		void EndDialogue();
+	virtual void EndDialogue_Implementation();
 
 
 	void Process_Row(FDialogueData* imported);

@@ -31,9 +31,9 @@ UDialogueDriver::UDialogueDriver()
  {
 	 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
 
-	 CurrentState = BlockFinished;
-
 	 Dialogue_Window->Output_Set(Block_Text);
+
+	 CurrentState = BlockFinished;
  }
 
  void UDialogueDriver::Kill_Dialogue_Implementation() 
