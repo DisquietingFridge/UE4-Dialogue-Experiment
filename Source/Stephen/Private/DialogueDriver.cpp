@@ -11,16 +11,6 @@ UDialogueDriver::UDialogueDriver()
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
- void UDialogueDriver::Drive_Append_Char()
- {
-	 if (Dialogue_Window) Dialogue_Window->Output_Append(Block_Text[charIndex]);
- }
-
- void UDialogueDriver::Drive_Set_Text()
- {
-	Dialogue_Window->Output_Set(Block_Text);
- }
-
  void UDialogueDriver::Next_Block_Implementation()
  {
 	 //initialize things for new block
@@ -43,8 +33,7 @@ UDialogueDriver::UDialogueDriver()
 
 	 CurrentState = BlockFinished;
 
-	 Drive_Set_Text();
-
+	 Dialogue_Window->Output_Set(Block_Text);
  }
 
  void UDialogueDriver::Kill_Dialogue_Implementation() 
@@ -73,8 +62,12 @@ UDialogueDriver::UDialogueDriver()
  void UDialogueDriver::TimerFired()
  {
 	 if (charIndex < blocklen) {
-		 Drive_Append_Char();
-		 charIndex++;
+		 if (Dialogue_Window)
+		 {
+			 Dialogue_Window->Output_Append(Block_Text[charIndex]);
+			 charIndex++;
+		 }
+		 
 	 }
 	 else {
 		 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
@@ -118,7 +111,6 @@ void UDialogueDriver::BeginPlay()
 	Super::BeginPlay();
 	SetupInput();
 	StartDialogue();
-	//Dialogue window setup
 	
 }
 
