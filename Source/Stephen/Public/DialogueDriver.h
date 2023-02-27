@@ -11,6 +11,14 @@ class UDataTable;
 #include "DialogueStructs.h"
 #include "DialogueDriver.generated.h"
 
+UENUM(Blueprintable)
+enum DialogueState
+{
+	BlockInProgress,
+	BlockFinished,
+	AwaitingChoice
+};
+
 UCLASS(Blueprintable)
 class STEPHEN_API UDialogueDriver : public UActorComponent
 {
@@ -35,20 +43,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Period = 0.005;
 	UPROPERTY(BlueprintReadWrite) FString Block_Text;
 
-	//UDELEGATE(BlueprintCallable)
-	DECLARE_DELEGATE(ButtonResponse)
-	ButtonResponse Skip_Or_Next;
-
-protected:
-
-
-
-public:
-
 	// Sets default values for this pawn's properties
 	UDialogueDriver();
 
 protected:
+
+	DialogueState CurrentState;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -73,7 +74,7 @@ protected:
 		void TimerFired();
 
 	UFUNCTION(BlueprintCallable)
-		void FireDelegate();
+		void DialogueInteractReceived();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 		void Kill_Dialogue();

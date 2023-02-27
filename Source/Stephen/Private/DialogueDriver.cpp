@@ -9,9 +9,6 @@
 UDialogueDriver::UDialogueDriver()
 {
 	PrimaryComponentTick.bStartWithTickEnabled = false;
-
-	//
-
 }
 
  void UDialogueDriver::Drive_Append_Char()
@@ -37,14 +34,14 @@ UDialogueDriver::UDialogueDriver()
 	 //start timer
 	 GetOwner()->GetWorldTimerManager().SetTimer(DialogueScanTimer, this, &UDialogueDriver::TimerFired, Scan_Period, true, Scan_Period);
 
-	 Skip_Or_Next.BindUObject(this, &UDialogueDriver::Skip_Block);
+	 CurrentState = BlockInProgress;
  }
 
  void UDialogueDriver::Skip_Block_Implementation()
  {
 	 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
 
-	 Skip_Or_Next.BindUObject(this, &UDialogueDriver::Next_Block);
+	 CurrentState = BlockFinished;
 
 	 Drive_Set_Text();
 
@@ -81,14 +78,22 @@ UDialogueDriver::UDialogueDriver()
 	 }
 	 else {
 		 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
-		 Skip_Or_Next.BindUObject(this, &UDialogueDriver::Next_Block_Implementation);
+		 CurrentState = BlockFinished;
 	 }
 
  }
 
- void UDialogueDriver::FireDelegate()
+ void UDialogueDriver::DialogueInteractReceived()
  {
-	 Skip_Or_Next.ExecuteIfBound();
+	 switch (CurrentState)
+	 {
+	 case BlockFinished:
+		 Next_Block_Implementation();
+		 return;
+	 case BlockInProgress:
+		 Skip_Block_Implementation();
+		 return;
+	 }
  }
 
  void UDialogueDriver::StartDialogue()
@@ -117,7 +122,7 @@ void UDialogueDriver::BeginPlay()
 	Super::BeginPlay();
 
 	GetOwner()->InputComponent = NewObject<UInputComponent>(GetOwner()); // initialize input component
-    GetOwner()->InputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &UDialogueDriver::FireDelegate);
+    GetOwner()->InputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &UDialogueDriver::DialogueInteractReceived);
 	StartDialogue();
 	//Dialogue window setup
 	
