@@ -16,10 +16,10 @@ class STEPHEN_API UDialogueWidget : public UUserWidget, public IDialogueInterfac
 {
 	GENERATED_BODY()
 
-public:
+protected:
 
-	UPROPERTY(Blueprintable) FString DisplayedText = "Output_Text initialized";
-	UPROPERTY() FString FinalText;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FString DisplayedText = "Output_Text initialized";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FString FinalText;
 
 public:
 

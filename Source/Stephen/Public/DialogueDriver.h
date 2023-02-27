@@ -26,22 +26,17 @@ class STEPHEN_API UDialogueDriver : public UActorComponent
 
 public:
 
-	int32 charIndex = 0;
-	int32 blocklen = 0;
 	FTimerHandle DialogueScanTimer;
 	
 	// Pertaining to data table
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) class UDataTable* Lines_Table = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FName First_Block_Name;
-	UPROPERTY(BlueprintReadWrite) FName Next_Block_Name;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Nametag = FText::FromString("ERROR: UNDEFINED NAME");
 
 	// Pertaining to widget
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) TSubclassOf<UDialogueWidget> Window_Class;
 	UPROPERTY(BlueprintReadWrite) UDialogueWidget* Dialogue_Window = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) float Scan_Period = 0.005;
-	UPROPERTY(BlueprintReadWrite) FString Block_Text;
 
 	// Sets default values for this pawn's properties
 	UDialogueDriver();
@@ -77,9 +72,6 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 		void EndDialogue();
 	virtual void EndDialogue_Implementation();
-
-
-	void Process_Row(FDialogueData* imported);
 
 public:	
 	// Called every frame

@@ -13,12 +13,23 @@ UDialogueDriver::UDialogueDriver()
 
 void UDialogueDriver::StartNewBlock_Implementation(FName NextBlockName)
  {
-	 //initialize things for new block
-	Dialogue_Window->HideAllChars();
 
 	 //import and process table row
 	 FDialogueData* imported = Lines_Table->FindRow<FDialogueData>(NextBlockName, "");
-	 Process_Row(imported);
+	 
+	 if (imported)
+	 {
+		 CurrentData = *imported;
+	 }
+	 else
+	 {
+		 EndDialogue_Implementation();
+		 return;
+	 }
+
+	 //initialize things for new block
+	 Dialogue_Window->HideAllChars();
+	 Dialogue_Window->SetBlockData(CurrentData.BlockText);
 
 	 //start timer
 	 GetOwner()->GetWorldTimerManager().SetTimer(DialogueScanTimer, this, &UDialogueDriver::TimerFired, Scan_Period, true, Scan_Period);
@@ -30,7 +41,7 @@ void UDialogueDriver::StartNewBlock_Implementation(FName NextBlockName)
  {
 	 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
 
-	 Dialogue_Window->SetBlockData(CurrentData.BlockText);
+	 Dialogue_Window->RevealAllChars();
 
 	 CurrentState = BlockFinished;
  }
@@ -45,22 +56,8 @@ void UDialogueDriver::StartNewBlock_Implementation(FName NextBlockName)
 	 GetOwner()->DisableInput(GEngine->GetFirstLocalPlayerController(GetWorld()));
  }
 
-
- void UDialogueDriver::Process_Row(FDialogueData* imported) {
-
-	 if (imported) { // if row was found
-		 Next_Block_Name = imported->NextBlockName;
-		 Block_Text = (imported->BlockText).ToString();
-		 blocklen = Block_Text.Len();
-	 }
-	 else { // else exit dialogue
-		 EndDialogue_Implementation();
-	 }
- }
-
  void UDialogueDriver::TimerFired()
  {
-	 //TODO: Probably should keep converted member after all to prevent this conversion all the time
 	 if (Dialogue_Window->RevealCharsAndIsDone())
 	 {
 		 GetOwner()->GetWorldTimerManager().ClearTimer(DialogueScanTimer);
