@@ -104,10 +104,6 @@ UDialogueDriver::UDialogueDriver()
 		 Dialogue_Window->AddToViewport(0);
 		 Dialogue_Window->SetVisibility(ESlateVisibility::Visible);
 
-		 if (GEngine) {
-			 GetOwner()->EnableInput(GEngine->GetFirstLocalPlayerController(GetWorld()));
-		 }
-
 		 Next_Block_Name = First_Block_Name;
 		 Next_Block_Implementation();
 	 }
@@ -120,12 +116,21 @@ UDialogueDriver::UDialogueDriver()
 void UDialogueDriver::BeginPlay()
 {
 	Super::BeginPlay();
-
-	GetOwner()->InputComponent = NewObject<UInputComponent>(GetOwner()); // initialize input component
-    GetOwner()->InputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &UDialogueDriver::DialogueInteractReceived);
+	SetupInput();
 	StartDialogue();
 	//Dialogue window setup
 	
+}
+
+void UDialogueDriver::SetupInput()
+{
+	GetOwner()->InputComponent = NewObject<UInputComponent>(GetOwner()); // initialize input component
+	GetOwner()->InputComponent->BindAction("Interact", EInputEvent::IE_Pressed, this, &UDialogueDriver::DialogueInteractReceived);
+	if (GEngine) 
+	{
+		GetOwner()->EnableInput(GEngine->GetFirstLocalPlayerController(GetWorld()));
+	}
+
 }
 
 // Called every frame
